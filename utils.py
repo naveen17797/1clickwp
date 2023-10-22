@@ -1,6 +1,8 @@
 import subprocess
+import time
 
 import docker
+import requests
 
 
 class DB:
@@ -64,7 +66,18 @@ class WordPress:
     def __init__(self):
         # Initialize the Docker client
         self.client = docker.from_env()
+    def wait_for_container_ready(self, container_name):
+        while True:
+            try:
+                container = self.client.containers.get(container_name)
+                if container.status == 'running':
+                    print(f"Container '{container_name}' is running and ready.")
+                    return
+            except docker.errors.NotFound:
+                pass
 
+            print(f"Waiting for container '{container_name}' to be ready...")
+            time.sleep(5)
     def create_instance(self, version, multi_site):
         # Define image name based on provided version
         image_name = f"wordpress:{version}"
@@ -106,9 +119,60 @@ class WordPress:
         if multi_site:
             wp_cli_command = f"docker exec {container.id} wp core multisite-convert"
             subprocess.run(wp_cli_command, shell=True)
-
         # Define the URL
         site_url = f"http://localhost:{host_port}"
+
+        # Assuming site_url is already defined
+        install_endpoint = f"{site_url}/wp-admin/install.php?step=2"
+
+        # Define headers and form data
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': site_url,
+            'Connection': 'keep-alive',
+            'Referer': f"{site_url}/wp-admin/install.php?step=1",
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-User': '?1'
+        }
+
+        form_data = {
+            'weblog_title': 'test',
+            'user_name': 'admin',
+            'admin_password': 'password',
+            'admin_password2': 'password',
+            'pw_weak': 'on',
+            'admin_email': 'admin@example.org',
+            'Submit': 'Install WordPress',
+            'language': ''
+        }
+
+        # Wait for the endpoint to be ready
+        max_attempts = 10
+        current_attempt = 0
+
+        while current_attempt < max_attempts:
+            try:
+                response = requests.get(install_endpoint)
+                if response.status_code == 200:
+                    break
+            except Exception as e:
+                print(f"Error: {e}")
+
+            current_attempt += 1
+            time.sleep(5)  # Wait for 5 seconds before re-attempting
+
+        # Continue with the installation process
+        if current_attempt < max_attempts:
+            response = requests.post(install_endpoint, headers=headers, data=form_data, timeout=300)
+        else:
+            print("Endpoint did not become ready within the specified attempts.")
 
         return site_url
 
