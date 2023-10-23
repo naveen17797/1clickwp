@@ -1,3 +1,4 @@
+import os
 import subprocess
 import time
 
@@ -104,6 +105,9 @@ class WordPress:
         table_prefix = ''.join(random.choice(string.ascii_lowercase) for i in range(6))
 
         # Create the WordPress container
+        # Create the WordPress container
+        deps_path = os.path.abspath('deps')
+
         container = self.client.containers.run(
             image=image_name,
             name=f"1clickwp_wp_container_{host_port}",
@@ -115,88 +119,100 @@ class WordPress:
                 "WORDPRESS_DB_NAME": "1clickwp_db",  # Set the database name
                 "WORDPRESS_TABLE_PREFIX": table_prefix  # Set the table prefix
             },
+            volumes={
+                f"{deps_path}/wp": {"bind": "/usr/local/bin/wp", "mode": "ro"},
+                f"{deps_path}/mysql": {"bind": "/usr/bin/mysql", "mode": "ro"}
+            },
             network="1clickwp_network",
             detach=True
         )
+        # Assuming `container` is the reference to your running container
+        command_template = '''bash -c "mkdir -p ~/.wp-cli/ && echo -e 'path: /var/www/html\\nurl: http://{WORDPRESS_DB_HOST}\\ndatabase:\\n  dbname: {WORDPRESS_DB_NAME}\\n  user: {WORDPRESS_DB_USER}\\n  password: {WORDPRESS_DB_PASSWORD}\\n  host: {WORDPRESS_DB_HOST}\\n  prefix: {WORDPRESS_TABLE_PREFIX}' > ~/.wp-cli/config.yml"'''
+
+        command = command_template.format(
+            WORDPRESS_DB_HOST="1clickwp_db",
+            WORDPRESS_DB_NAME="1clickwp_db",
+            WORDPRESS_DB_USER="root",
+            WORDPRESS_DB_PASSWORD="password",
+            WORDPRESS_TABLE_PREFIX=table_prefix
+        )
+
+        result = container.exec_run(command, stdout=True, stderr=True, tty=True)
 
 
-        # If multi_site is True, configure it via wp-cli
-        if multi_site:
-            # Check if WP-CLI is installed
-            wp_cli_check_command = f"docker exec {container.id} wp --version"
-            wp_cli_check_process = subprocess.run(wp_cli_check_command, shell=True, capture_output=True)
-
-            if wp_cli_check_process.returncode == 0:
-                # WP-CLI is installed, proceed with multisite conversion
-                wp_cli_command = f"docker exec {container.id} wp core multisite-convert"
-                subprocess.run(wp_cli_command, shell=True)
-            else:
-                # WP-CLI is not installed, install it and then run multisite command
-                install_wp_cli_command = f"docker exec {container.id} curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && chmod +x wp-cli.phar && sudo mv wp-cli.phar /usr/local/bin/wp"
-                subprocess.run(install_wp_cli_command, shell=True)
-                wp_cli_command = f"docker exec {container.id} wp core multisite-convert"
-                subprocess.run(wp_cli_command, shell=True)
 
         # Define the URL
         site_url = f"http://localhost:{host_port}"
+        result =  container.exec_run(f"curl -sO http://ftp.de.debian.org/debian/pool/main/libe/libedit/libedit2_3.1-20191231-2+b1_amd64.deb && dpkg -i libedit2_3.1-20191231-2+b1_amd64.deb", stdout=True, stderr=True, tty=True)
+        print(result.output)
 
-        # Assuming site_url is already defined
-        install_endpoint = f"{site_url}/wp-admin/install.php?step=2"
 
-        # Define headers and form data
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Origin': site_url,
-            'Connection': 'keep-alive',
-            'Referer': f"{site_url}/wp-admin/install.php?step=1",
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'same-origin',
-            'Sec-Fetch-User': '?1'
-        }
+        result = container.exec_run(f"wp core install --path=/var/www/html --url={site_url} --title='Your Site Title' --admin_user=admin --admin_password=password --admin_email=admin@example.org --allow-root", stdout=True, stderr=True, tty=True)
+        # Print the output if needed
+        print(result.output)
 
-        form_data = {
-            'weblog_title': 'test',
-            'user_name': 'admin',
-            'admin_password': 'password',
-            'admin_password2': 'password',
-            'pw_weak': 'on',
-            'admin_email': 'admin@example.org',
-            'Submit': 'Install WordPress',
-            'language': ''
-        }
+        # If multi_site is True, configure it via wp-cli
+        if multi_site:
+            wp_cli_command = f"docker exec {container.id} wp core multisite-convert --allow-root"
+            subprocess.run(wp_cli_command, shell=True)
 
-        # Wait for the endpoint to be ready
-        max_attempts = 10
-        current_attempt = 0
 
-        while current_attempt < max_attempts:
-            try:
-                response = requests.get(install_endpoint)
-                if response.status_code == 200:
-                    break
-            except Exception as e:
-                print(f"Error: {e}")
-
-            current_attempt += 1
-            time.sleep(5)  # Wait for 5 seconds before re-attempting
-
-        # Continue with the installation process
-        if current_attempt < max_attempts:
-            response = requests.post(install_endpoint, headers=headers, data=form_data, timeout=300)
-        else:
-            print("Endpoint did not become ready within the specified attempts.")
+        # # Assuming site_url is already defined
+        # install_endpoint = f"{site_url}/wp-admin/install.php?step=2"
+        #
+        # # Define headers and form data
+        # headers = {
+        #     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+        #     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        #     'Accept-Language': 'en-US,en;q=0.5',
+        #     'Accept-Encoding': 'gzip, deflate, br',
+        #     'Content-Type': 'application/x-www-form-urlencoded',
+        #     'Origin': site_url,
+        #     'Connection': 'keep-alive',
+        #     'Referer': f"{site_url}/wp-admin/install.php?step=1",
+        #     'Upgrade-Insecure-Requests': '1',
+        #     'Sec-Fetch-Dest': 'document',
+        #     'Sec-Fetch-Mode': 'navigate',
+        #     'Sec-Fetch-Site': 'same-origin',
+        #     'Sec-Fetch-User': '?1'
+        # }
+        #
+        # form_data = {
+        #     'weblog_title': 'test',
+        #     'user_name': 'admin',
+        #     'admin_password': 'password',
+        #     'admin_password2': 'password',
+        #     'pw_weak': 'on',
+        #     'admin_email': 'admin@example.org',
+        #     'Submit': 'Install WordPress',
+        #     'language': ''
+        # }
+        #
+        # # Wait for the endpoint to be ready
+        # max_attempts = 10
+        # current_attempt = 0
+        #
+        # while current_attempt < max_attempts:
+        #     try:
+        #         response = requests.get(install_endpoint)
+        #         if response.status_code == 200:
+        #             break
+        #     except Exception as e:
+        #         print(f"Error: {e}")
+        #
+        #     current_attempt += 1
+        #     time.sleep(5)  # Wait for 5 seconds before re-attempting
+        #
+        # # Continue with the installation process
+        # if current_attempt < max_attempts:
+        #     response = requests.post(install_endpoint, headers=headers, data=form_data, timeout=300)
+        # else:
+        #     print("Endpoint did not become ready within the specified attempts.")
 
         return site_url, container.attrs['Id']
 
     def delete_instance(self, site_id):
         container = self.client.containers.get(site_id)
         if container:
-
             container.kill()
             container.remove()
