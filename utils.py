@@ -66,6 +66,11 @@ class WordPress:
     def __init__(self):
         # Initialize the Docker client
         self.client = docker.from_env()
+
+    def get_instances(self):
+        containers = self.client.containers.list()
+        return [container for container in containers if container.name.startswith("1clickwp_wp_container_")]
+
     def wait_for_container_ready(self, container_name):
         while True:
             try:
