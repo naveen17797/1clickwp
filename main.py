@@ -1,11 +1,12 @@
 import docker
 from fastapi import FastAPI
 from utils import DB
-from routers import sites
+from routers import sites, images
 
 
 app = FastAPI()
 app.include_router(sites.router)
+app.include_router(images.router)
 
 @app.get("/")
 async def root():
