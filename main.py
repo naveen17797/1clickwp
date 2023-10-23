@@ -1,49 +1,15 @@
-from typing import Annotated
 import docker
-from fastapi import FastAPI, Path
+from fastapi import FastAPI
+from utils import DB
+from routers import sites
 
-from models.site import Site
-from utils import DB, WordPress
 
 app = FastAPI()
-
-wp = WordPress()
-
-@app.post("/sites")
-async def create(site: Site):
-    # steps
-    # 1. create a wp container
-    # 2. if multisite configure it via wp-cli
-    url, id =  wp.create_instance(site.version, site.multi_site)
-    admin_url = f"{url}/wp-login.php"
-    site.url = url
-    site.id = id
-    site.admin_url = admin_url
-    return site
-
-@app.get("/sites")
-async def get():
-    instances = wp.get_instances()
-    sites = []
-    for instance in instances:
-        attrs = instance.attrs
-        version = attrs['Config']['Image'].split(':')[1]
-        multi_site = True if 'multisite' in version else False
-        url = f"http://localhost:{attrs['HostConfig']['PortBindings']['80/tcp'][0]['HostPort']}"
-        site = Site(version=version, multi_site=multi_site, url=url, admin_url=f"{url}/wp-admin", id=attrs['Id'])
-        sites.append(site.dict())
-    return sites
-
-@app.delete("/sites/{site_id}")
-async def delete( site_id: Annotated[str, Path(title="The ID of the site to delete")]):
-    wp.delete_instance(site_id)
-
-
+app.include_router(sites.router)
 
 @app.get("/")
 async def root():
     return []
-
 
 # Remove and prune containers on shutdown hook
 # Function to stop and remove containers with a specific prefix
