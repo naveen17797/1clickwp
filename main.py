@@ -1,7 +1,9 @@
 from typing import Annotated
 
-from fastapi import FastAPI, Path
+import docker
+from fastapi import FastAPI, Path, WebSocket
 from pydantic import BaseModel
+from starlette.responses import HTMLResponse
 
 from utils import DB, WordPress
 
@@ -12,24 +14,42 @@ app = FastAPI()
 
 
 class Site(BaseModel):
-    id:str = None
+    id: str = None
     version: str
     multi_site: bool
     url: str = None  # Optional field, initialized to None
     admin_url: str = None  # Optional field, initialized to None
+
+
 wp = WordPress()
 
-@app.post("/sites")
-async def create(site: Site):
-    # steps
+
+@app.websocket("/create_site")
+async def create_site(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_text("Received site creation request")
     # 1. create a wp container
     # 2. if multisite configure it via wp-cli
-    url, id =  wp.create_instance(site.version, site.multi_site)
+    url, container_id = await wp.create_instance("6.0.0", True, websocket)
     admin_url = f"{url}/wp-login.php"
-    site.url = url
-    site.id = id
-    site.admin_url = admin_url
-    return site
+
+    # Instead of returning, send the sentence as a message
+    await websocket.send_text("Site created successfully!")
+    # You can also send additional information if needed
+    await websocket.send_json({"url": url, "admin_url": admin_url})
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        data = await websocket.receive_text()
+        await websocket.send_text(f"Message text was: {data}")
+
+
+
+
+
 
 @app.get("/sites")
 async def get():
@@ -44,12 +64,70 @@ async def get():
         sites.append(site.dict())
     return sites
 
+
 @app.delete("/sites/{site_id}")
-async def delete( site_id: Annotated[str, Path(title="The ID of the site to delete")]):
+async def delete(site_id: Annotated[str, Path(title="The ID of the site to delete")]):
     wp.delete_instance(site_id)
 
 
 
+
+
+
+html = """
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+    </head>
+    <body>
+        <h1>WebSocket Chat</h1>
+        <form action="" onsubmit="sendMessage(event)">
+            <input type="text" id="messageText" autocomplete="off"/>
+            <button>Send</button>
+        </form>
+        <ul id='messages'>
+        </ul>
+        <script>
+            var ws = new WebSocket("ws://localhost:8000/create_site");
+            ws.onmessage = function(event) {
+                var messages = document.getElementById('messages')
+                var message = document.createElement('li')
+                var content = document.createTextNode(event.data)
+                message.appendChild(content)
+                messages.appendChild(message)
+            };
+            function sendMessage(event) {
+                var input = document.getElementById("messageText")
+                ws.send(input.value)
+                input.value = ''
+                event.preventDefault()
+            }
+        </script>
+    </body>
+</html>
+"""
+
+
 @app.get("/")
-async def root():
-    return []
+async def get():
+    return HTMLResponse(html)
+
+
+
+
+
+# Remove and prune containers on shutdown hook
+# Function to stop and remove containers with a specific prefix
+def stop_and_remove_containers(prefix: str):
+    client = docker.from_env()
+    containers = client.containers.list(all=True, filters={"name": f"{prefix}*"})
+    for container in containers:
+        container.stop()
+        container.remove()
+
+@app.on_event("shutdown")
+async def cleanup():
+    # Stop and remove containers with prefix "1clickwp"
+    stop_and_remove_containers("1clickwp")
+

@@ -3,6 +3,7 @@ import time
 
 import docker
 import requests
+from websocket import WebSocket
 
 
 class DB:
@@ -84,7 +85,7 @@ class WordPress:
             print(f"Waiting for container '{container_name}' to be ready...")
             time.sleep(5)
 
-    def create_instance(self, version, multi_site):
+    async def create_instance(self, version, multi_site, websocket: WebSocket):
         # Define image name based on provided version
         image_name = f"wordpress:{version}"
 
@@ -92,12 +93,13 @@ class WordPress:
         host_port = 10000
         while True:
             try:
+                await websocket.send_text("cant use port " + str(host_port) + " since its already allocated")
                 print("cant use port " + str(host_port) + " since its already allocated")
                 self.client.containers.get(f"1clickwp_wp_container_{host_port}")
                 host_port += 1
             except docker.errors.NotFound:
                 break
-        print("using port " + str(host_port))
+        await websocket.send_text("using port " + str(host_port))
         # Generate a random prefix for tables
         import random
         import string
@@ -118,8 +120,8 @@ class WordPress:
             network="1clickwp_network",
             detach=True
         )
-
-        print(container.logs())
+        for line in container.logs(stream=True):
+            await websocket.send_text(line.strip())
 
         # If multi_site is True, configure it via wp-cli
         if multi_site:
@@ -185,6 +187,5 @@ class WordPress:
     def delete_instance(self, site_id):
         container = self.client.containers.get(site_id)
         if container:
-
             container.kill()
             container.remove()
