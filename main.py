@@ -5,22 +5,17 @@ from fastapi import FastAPI, Path, WebSocket
 from pydantic import BaseModel
 from starlette.responses import HTMLResponse
 
+from models.site import Site
 from utils import DB, WordPress
 
+"""
+Initialize the db container
+"""
 db = DB()
 db.init_db()
 
+
 app = FastAPI()
-
-
-class Site(BaseModel):
-    id: str = None
-    version: str
-    multi_site: bool
-    url: str = None  # Optional field, initialized to None
-    admin_url: str = None  # Optional field, initialized to None
-
-
 wp = WordPress()
 
 
