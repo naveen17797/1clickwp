@@ -119,12 +119,24 @@ class WordPress:
             detach=True
         )
 
-        print(container.logs())
 
         # If multi_site is True, configure it via wp-cli
         if multi_site:
-            wp_cli_command = f"docker exec {container.id} wp core multisite-convert"
-            subprocess.run(wp_cli_command, shell=True)
+            # Check if WP-CLI is installed
+            wp_cli_check_command = f"docker exec {container.id} wp --version"
+            wp_cli_check_process = subprocess.run(wp_cli_check_command, shell=True, capture_output=True)
+
+            if wp_cli_check_process.returncode == 0:
+                # WP-CLI is installed, proceed with multisite conversion
+                wp_cli_command = f"docker exec {container.id} wp core multisite-convert"
+                subprocess.run(wp_cli_command, shell=True)
+            else:
+                # WP-CLI is not installed, install it and then run multisite command
+                install_wp_cli_command = f"docker exec {container.id} curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && chmod +x wp-cli.phar && sudo mv wp-cli.phar /usr/local/bin/wp"
+                subprocess.run(install_wp_cli_command, shell=True)
+                wp_cli_command = f"docker exec {container.id} wp core multisite-convert"
+                subprocess.run(wp_cli_command, shell=True)
+
         # Define the URL
         site_url = f"http://localhost:{host_port}"
 
