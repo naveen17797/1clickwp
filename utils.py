@@ -83,6 +83,7 @@ class WordPress:
 
             print(f"Waiting for container '{container_name}' to be ready...")
             time.sleep(5)
+
     def create_instance(self, version, multi_site):
         # Define image name based on provided version
         image_name = f"wordpress:{version}"
@@ -179,7 +180,11 @@ class WordPress:
         else:
             print("Endpoint did not become ready within the specified attempts.")
 
-        return site_url
+        return site_url, container.attrs['Id']
 
+    def delete_instance(self, site_id):
+        container = self.client.containers.get(site_id)
+        if container:
 
-
+            container.kill()
+            container.remove()
