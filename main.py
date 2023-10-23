@@ -1,22 +1,12 @@
 from typing import Annotated
-
 import docker
 from fastapi import FastAPI, Path
-from pydantic import BaseModel
 
+from models.site import Site
 from utils import DB, WordPress
-
-
 
 app = FastAPI()
 
-
-class Site(BaseModel):
-    id:str = None
-    version: str
-    multi_site: bool
-    url: str = None  # Optional field, initialized to None
-    admin_url: str = None  # Optional field, initialized to None
 wp = WordPress()
 
 @app.post("/sites")
