@@ -17,6 +17,14 @@
   </nz-header>
 
 
+  <ng-template #noSites>
+    <div class="center-empty">
+      <nz-empty
+        nzNotFoundImage="simple"
+        nzNotFoundContent="🤷‍♂️ No sites found"
+      ></nz-empty>
+    </div>
+  </ng-template>
 
   <nz-content>
     <div nz-row nzJustify="center"  class="main">
@@ -41,7 +49,7 @@
           </form>
 
 
-          <nz-table #sitesTable [nzData]="sites" [nzBordered]="true" id="sites_table" [nzLoading]="loading">
+          <nz-table #sitesTable [nzData]="sites" [nzBordered]="true" id="sites_table" [nzLoading]="loading" [nzNoResult]="noSites">
             <thead>
             <tr>
               <th>WP Version</th>
@@ -56,9 +64,12 @@
               <td>{{ site.multi_site ? 'Yes' : 'No' }}</td>
               <td>{{ site.url }}</td>
               <td>
-                <button nz-button nzType="default" nzDanger (click)="deleteSite(site.id)">Delete</button>
+                <a [href]="site.admin_url + '?auto_login=true'" nzGhost target="_blank" nz-button nzType="primary">1 Click Login</a>
                 <nz-divider nzType="vertical"></nz-divider>
-                <a [href]="site.admin_url" nzGhost target="_blank" nz-button nzType="primary">Login</a>
+                <a [href]="site.admin_url" nzGhost target="_blank" nz-button nzType="primary">Wp-Admin</a>
+                <nz-divider nzType="vertical"></nz-divider>
+                <button nz-button nzType="default" nzDanger (click)="deleteSite(site.id)">Delete</button>
+
               </td>
             </tr>
             </tbody>

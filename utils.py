@@ -111,7 +111,10 @@ class WordPress:
             volumes={
                 f"{deps_path}/wp": {"bind": "/usr/local/bin/wp", "mode": "ro"},
                 f"{deps_path}/mysql": {"bind": "/usr/bin/mysql", "mode": "ro"},
-                f"{deps_path}/libedit.deb": {"bind": "/tmp/libedit.deb", "mode": "ro"}
+                f"{deps_path}/libedit.deb": {"bind": "/tmp/libedit.deb", "mode": "ro"},
+                f"{deps_path}/mu-plugins/load.php": {"bind": "/var/www/html/wp-content/mu-plugins/load.php", "mode": "ro"},
+                f"{deps_path}/mu-plugins/auto-login.php": {"bind": "/var/www/html/wp-content/mu-plugins/auto-login.php",
+                                                     "mode": "ro"}
             },
             network="1clickwp_network",
             detach=True

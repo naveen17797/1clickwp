@@ -22,6 +22,7 @@ import {NzTableModule} from "ng-zorro-antd/table";
 import {NzDividerModule} from "ng-zorro-antd/divider";
 import {NzCardModule} from "ng-zorro-antd/card";
 import {NzIconModule} from "ng-zorro-antd/icon";
+import {NzEmptyModule} from "ng-zorro-antd/empty";
 
 registerLocaleData(en);
 
@@ -47,7 +48,8 @@ registerLocaleData(en);
     NzTableModule,
     NzDividerModule,
     NzCardModule,
-    NzIconModule
+    NzIconModule,
+    NzEmptyModule
   ],
   providers: [
     { provide: NZ_I18N, useValue: en_US }
