@@ -96,10 +96,10 @@ class WordPress:
         # Create the WordPress container
         # Create the WordPress container
         deps_path = os.path.abspath('deps')
-
+        label = 'multi_site' if multi_site else ''
         container = self.client.containers.run(
             image=image_name,
-            name=f"1clickwp_wp_container_{host_port}",
+            name=f"1clickwp_wp_container_{label}_{host_port}",
             ports={f"80/tcp": ('127.0.0.1', host_port)},
             environment={
                 "WORDPRESS_DB_HOST": "1clickwp_db",

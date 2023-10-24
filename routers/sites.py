@@ -28,8 +28,9 @@ async def get():
     sites = []
     for instance in instances:
         attrs = instance.attrs
+        name = attrs['Name']
         version = attrs['Config']['Image'].split(':')[1]
-        multi_site = True if 'multisite' in version else False
+        multi_site = True if 'multi_site' in name else False
         url = f"http://localhost:{attrs['HostConfig']['PortBindings']['80/tcp'][0]['HostPort']}"
         site = Site(version=version, multi_site=multi_site, url=url, admin_url=f"{url}/wp-admin", id=attrs['Id'])
         sites.append(site.dict())
