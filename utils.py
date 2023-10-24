@@ -163,10 +163,6 @@ class WordPress:
          I dont want to take responsibility to publish new images as the time progress.
         """
 
-
-        """
-         Run the site installation with default parameters using wp cli
-        """
         logs = container.exec_run(
             f"bash -c 'dpkg -i /tmp/libedit.deb && wp core install --path=/var/www/html --url={site_url} --title=\"Your Site Title\" --admin_user=admin --admin_password=password --admin_email=admin@example.org --allow-root'",
             stdout=True, stderr=True, tty=True)
