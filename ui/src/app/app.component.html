@@ -1,41 +1,72 @@
 <nz-layout>
   <nz-header>
-    <b nz-typography nzType="warning">1ClickWP</b>
+    <nz-row  nzJustify="space-between" nzAlign="middle">
+      <b nz-typography id="title">1ClickWP</b>
+      <nz-row nzJustify="end" nzAlign="middle" [nzGutter]="16">
+        <a href="https://github.com/naveen17797" target="_blank">
+          <span nz-icon nzType="github" nzTheme="outline"></span>
+        </a>
+        <a href="https://buymeacoffee.com/naveen17797" target="_blank">
+          <span nz-icon nzType="coffee" nzTheme="outline"></span>
+        </a>
+        <a href="https://github.com/naveen17797/1clickwp" target="_blank">
+          <span nz-icon nzType="fork" nzTheme="outline"></span>
+        </a>
+      </nz-row>
+    </nz-row>
   </nz-header>
+
+
+
   <nz-content>
-    <div nz-row nzJustify="center" nzAlign="middle" class="full-height">
-      <ng-container *ngIf="loading; else form">
-        <nz-spin></nz-spin>
-      </ng-container>
-      <ng-template #form>
-        <form nz-form [formGroup]="siteForm" (ngSubmit)="createSite()">
-          <nz-form-item>
-            <nz-form-label [nzSpan]="8">WordPress Version:</nz-form-label>
-            <nz-form-control [nzSpan]="16">
-              <input nz-input formControlName="version" required />
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-control [nzSpan]="16" [nzOffset]="8">
-              <label nz-checkbox formControlName="multi_site">Multisite</label>
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item  style="text-align: center;">
-            <button nz-button nzType="primary" type="submit">Create Site</button>
-          </nz-form-item>
-        </form>
-      </ng-template>
-    </div>
-    <div class="site-list">
-      <h2>List of Sites</h2>
-      <ul>
-        <li *ngFor="let site of sites">
-          ID: {{ site.id }}, Version: {{ site.version }}, Multisite: {{ site.multi_site ? 'Yes' : 'No' }}, URL:
-          {{ site.url }}
-          <button nz-button nzType="primary" (click)="deleteSite(site.id)">Delete</button>
-          <a [href]="site.admin_url"  nz-button nzType="primary">Login</a>
-        </li>
-      </ul>
+    <div nz-row nzJustify="center"  class="main">
+      <!-- Left Column (List of Sites) -->
+      <nz-col nzSpan="24">
+        <nz-card nzTitle="Dashboard">
+          <form nz-form [nzLayout]="'inline'" [formGroup]="siteForm" (ngSubmit)="createSite()" >
+            <nz-form-item>
+              <nz-form-label [nzSpan]="16">WordPress Version</nz-form-label>
+              <nz-form-control [nzSpan]="16">
+                <input nz-input formControlName="version" required />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-control [nzSpan]="16" [nzOffset]="8">
+                <label nz-checkbox formControlName="multi_site">Multisite</label>
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item style="margin-left:20px;">
+              <button nz-button nzType="primary" nzGhost type="submit">Create WP Site</button>
+            </nz-form-item>
+          </form>
+
+
+          <nz-table #sitesTable [nzData]="sites" [nzBordered]="true" id="sites_table" [nzLoading]="loading">
+            <thead>
+            <tr>
+              <th>WP Version</th>
+              <th>Multisite</th>
+              <th>URL</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let site of sites">
+              <td>{{ site.version }}</td>
+              <td>{{ site.multi_site ? 'Yes' : 'No' }}</td>
+              <td>{{ site.url }}</td>
+              <td>
+                <button nz-button nzType="default" nzDanger (click)="deleteSite(site.id)">Delete</button>
+                <nz-divider nzType="vertical"></nz-divider>
+                <a [href]="site.admin_url" nzGhost target="_blank" nz-button nzType="primary">Login</a>
+              </td>
+            </tr>
+            </tbody>
+          </nz-table>
+        </nz-card>
+      </nz-col>
+
+
     </div>
   </nz-content>
 </nz-layout>

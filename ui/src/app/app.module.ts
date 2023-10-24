@@ -18,6 +18,10 @@ import {NzButtonModule} from "ng-zorro-antd/button";
 import {NzCheckboxModule} from "ng-zorro-antd/checkbox";
 import {NzInputModule} from "ng-zorro-antd/input";
 import {NzTypographyModule} from "ng-zorro-antd/typography";
+import {NzTableModule} from "ng-zorro-antd/table";
+import {NzDividerModule} from "ng-zorro-antd/divider";
+import {NzCardModule} from "ng-zorro-antd/card";
+import {NzIconModule} from "ng-zorro-antd/icon";
 
 registerLocaleData(en);
 
@@ -39,7 +43,11 @@ registerLocaleData(en);
     NzCheckboxModule,
     NzInputModule,
     ReactiveFormsModule,
-    NzTypographyModule
+    NzTypographyModule,
+    NzTableModule,
+    NzDividerModule,
+    NzCardModule,
+    NzIconModule
   ],
   providers: [
     { provide: NZ_I18N, useValue: en_US }

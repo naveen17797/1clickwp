@@ -9,7 +9,7 @@ import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 })
 export class AppComponent {
   loading = true;
-  wpVersion = '';
+
   multisite = false;
   sites: any[] = [];
 
@@ -20,7 +20,7 @@ export class AppComponent {
 
   constructor(private http: HttpClient, private fb: FormBuilder) {
     this.siteForm = this.fb.group({
-      version: ['', Validators.required],
+      version: ['6.0.0', Validators.required],
       multi_site: [false]
     });
   }
@@ -53,11 +53,12 @@ export class AppComponent {
   }
 
   createSite() {
+    this.loading = true
     const body = this.siteForm.value
 
     this.http.post('/sites', body).subscribe(
       () => {
-        alert('Site created successfully!');
+        this.loading = false
         this.listSites();
       },
       () => {
@@ -67,20 +68,24 @@ export class AppComponent {
   }
 
   listSites() {
+    this.loading = true
     this.http.get<any[]>('/sites').subscribe(
       sites => {
         this.sites = sites;
       },
       () => {
         console.error('Error fetching sites');
+      }, () => {
+        this.loading = false
       }
     );
   }
 
   deleteSite(siteId: string) {
+    this.loading = true
     this.http.delete(`/sites/${siteId}`).subscribe(
       () => {
-        alert('Site deleted successfully!');
+        this.loading = false
         this.listSites();
       },
       () => {
