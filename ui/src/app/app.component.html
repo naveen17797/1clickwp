@@ -1,4 +1,41 @@
-<!-- NG-ZORRO -->
-<a href="https://github.com/NG-ZORRO/ng-zorro-antd" target="_blank" style="display: flex;align-items: center;justify-content: center;height: 100%;width: 100%;">
-  <img height="300" src="https://img.alicdn.com/tfs/TB1X.qJJgHqK1RjSZFgXXa7JXXa-89-131.svg">
-</a>
+<nz-layout>
+  <nz-header>
+    <b nz-typography nzType="warning">1ClickWP</b>
+  </nz-header>
+  <nz-content>
+    <div nz-row nzJustify="center" nzAlign="middle" class="full-height">
+      <ng-container *ngIf="loading; else form">
+        <nz-spin></nz-spin>
+      </ng-container>
+      <ng-template #form>
+        <form nz-form [formGroup]="siteForm" (ngSubmit)="createSite()">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="8">WordPress Version:</nz-form-label>
+            <nz-form-control [nzSpan]="16">
+              <input nz-input formControlName="version" required />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-control [nzSpan]="16" [nzOffset]="8">
+              <label nz-checkbox formControlName="multi_site">Multisite</label>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item  style="text-align: center;">
+            <button nz-button nzType="primary" type="submit">Create Site</button>
+          </nz-form-item>
+        </form>
+      </ng-template>
+    </div>
+    <div class="site-list">
+      <h2>List of Sites</h2>
+      <ul>
+        <li *ngFor="let site of sites">
+          ID: {{ site.id }}, Version: {{ site.version }}, Multisite: {{ site.multi_site ? 'Yes' : 'No' }}, URL:
+          {{ site.url }}
+          <button nz-button nzType="primary" (click)="deleteSite(site.id)">Delete</button>
+          <a [href]="site.admin_url"  nz-button nzType="primary">Login</a>
+        </li>
+      </ul>
+    </div>
+  </nz-content>
+</nz-layout>
