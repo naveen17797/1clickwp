@@ -1,5 +1,6 @@
 import docker
 from fastapi import FastAPI
+from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
 
 from utils import DB
@@ -13,7 +14,7 @@ app.mount("/ui", StaticFiles(directory="ui/dist/ui/"))
 
 @app.get("/")
 async def root():
-    return []
+    return RedirectResponse(url="/ui/index.html")
 
 # Remove and prune containers on shutdown hook
 # Function to stop and remove containers with a specific prefix
