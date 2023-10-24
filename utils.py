@@ -77,16 +77,21 @@ class WordPress:
     def create_instance(self, version, multi_site):
         # Define image name based on provided version
         image_name = f"wordpress:{version}"
+        label = 'multi_site' if multi_site else ''
+        # Define the prefix
+        prefix = "1clickwp_wp_container_"
 
-        # Find an available host port (e.g., starting from 9000)
-        host_port = 10000
-        while True:
-            try:
-                print("cant use port " + str(host_port) + " since its already allocated")
-                self.client.containers.get(f"1clickwp_wp_container_{host_port}")
-                host_port += 1
-            except docker.errors.NotFound:
-                break
+        # Get a list of containers with the specified prefix
+        containers = self.client.containers.list(all=True, filters={"name": f"^/{prefix}"})
+
+        # Extract host ports from container names
+        used_ports = [int(container.name.split("_")[-1]) for container in containers]
+
+        if used_ports:
+            max_port = max(used_ports)
+            host_port = max_port + 1
+        else:
+            host_port = 10000
         print("using port " + str(host_port))
         # Generate a random prefix for tables
         import random
@@ -96,7 +101,7 @@ class WordPress:
         # Create the WordPress container
         # Create the WordPress container
         deps_path = os.path.abspath('deps')
-        label = 'multi_site' if multi_site else ''
+
         container = self.client.containers.run(
             image=image_name,
             name=f"1clickwp_wp_container_{label}_{host_port}",

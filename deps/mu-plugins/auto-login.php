@@ -15,7 +15,7 @@ function auto_login_admin_user() {
             do_action( 'wp_login', $user->user_login );
 
             // Redirect to the dashboard
-            wp_redirect( admin_url() );
+            wp_redirect(admin_url('about.php'));
             exit;
         }
     }
