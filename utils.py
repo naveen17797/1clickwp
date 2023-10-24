@@ -162,14 +162,15 @@ class WordPress:
          If you are thinking why didn't this guy just extend and publish own image ? The purpose of this app is to test official wp images,
          I dont want to take responsibility to publish new images as the time progress.
         """
-        container.exec_run(f"curl -sO http://ftp.de.debian.org/debian/pool/main/libe/libedit/libedit2_3.1-20191231-2+b1_amd64.deb && dpkg -i libedit2_3.1-20191231-2+b1_amd64.deb", stdout=True, stderr=True, tty=True)
 
 
         """
          Run the site installation with default parameters using wp cli
         """
-        container.exec_run(f"wp core install --path=/var/www/html --url={site_url} --title='Your Site Title' --admin_user=admin --admin_password=password --admin_email=admin@example.org --allow-root", stdout=True, stderr=True, tty=True)
-
+        logs = container.exec_run(
+            f"bash -c 'dpkg -i /tmp/libedit.deb && wp core install --path=/var/www/html --url={site_url} --title=\"Your Site Title\" --admin_user=admin --admin_password=password --admin_email=admin@example.org --allow-root'",
+            stdout=True, stderr=True, tty=True)
+        print(logs)
 
         if multi_site:
             wp_cli_command = f"docker exec {container.id} wp core multisite-convert --allow-root"
