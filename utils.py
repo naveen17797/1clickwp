@@ -155,8 +155,11 @@ class WordPress:
          Umm ok, couldnt we volume map that stand alone binary since all of the wp images are built on debian ?
          Nope, the mysql-client requires libedit.so, at this point i got quite frustrated. One might ask why dont you
          just install it every time you create the wp container ? This app spawns containers multiple times, i dont want to 
-         waste the network bandwidth. So on final try i mapped the .so file and it worked. But deep down i know i created a 
+         waste the network bandwidth. So on final try i mapped the libedit.so file and it worked. But deep down i know i created a 
          frankeinsteins monster.
+         
+         If you are thinking why didn't this guy just extend and publish own image ? The purpose of this app is to test official wp images,
+         I dont want to take responsibility to publish new images as the time progress.
         """
         container.exec_run(f"curl -sO http://ftp.de.debian.org/debian/pool/main/libe/libedit/libedit2_3.1-20191231-2+b1_amd64.deb && dpkg -i libedit2_3.1-20191231-2+b1_amd64.deb", stdout=True, stderr=True, tty=True)
 
