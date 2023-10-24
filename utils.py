@@ -72,18 +72,7 @@ class WordPress:
         containers = self.client.containers.list()
         return [container for container in containers if container.name.startswith("1clickwp_wp_container_")]
 
-    def wait_for_container_ready(self, container_name):
-        while True:
-            try:
-                container = self.client.containers.get(container_name)
-                if container.status == 'running':
-                    print(f"Container '{container_name}' is running and ready.")
-                    return
-            except docker.errors.NotFound:
-                pass
 
-            print(f"Waiting for container '{container_name}' to be ready...")
-            time.sleep(5)
 
     def create_instance(self, version, multi_site):
         # Define image name based on provided version
