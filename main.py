@@ -1,5 +1,7 @@
 import docker
 from fastapi import FastAPI
+from starlette.staticfiles import StaticFiles
+
 from utils import DB
 from routers import sites, images
 
@@ -7,6 +9,7 @@ from routers import sites, images
 app = FastAPI()
 app.include_router(sites.router)
 app.include_router(images.router)
+app.mount("/ui", StaticFiles(directory="ui/dist/ui/"))
 
 @app.get("/")
 async def root():
