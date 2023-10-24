@@ -102,7 +102,7 @@ class WordPress:
         # Generate a random prefix for tables
         import random
         import string
-        table_prefix = ''.join(random.choice(string.ascii_lowercase) for i in range(6))
+        table_prefix = ''.join(random.choice(string.ascii_lowercase) for i in range(6)) + str(host_port)
 
         # Create the WordPress container
         # Create the WordPress container
@@ -126,7 +126,13 @@ class WordPress:
             network="1clickwp_network",
             detach=True
         )
-        # Assuming `container` is the reference to your running container
+
+        """
+            First we need to write the config from environment variable to to ~/.wp-cli/config.yml
+            Because the official wordpress docker image reads from env variable
+            and wp-cli refuses to do it from env variable and requires a yaml file
+            ( The reasoning behind this is beyond my intellectual capability ) 
+        """
         command_template = '''bash -c "mkdir -p ~/.wp-cli/ && echo -e 'path: /var/www/html\\nurl: http://{WORDPRESS_DB_HOST}\\ndatabase:\\n  dbname: {WORDPRESS_DB_NAME}\\n  user: {WORDPRESS_DB_USER}\\n  password: {WORDPRESS_DB_PASSWORD}\\n  host: {WORDPRESS_DB_HOST}\\n  prefix: {WORDPRESS_TABLE_PREFIX}' > ~/.wp-cli/config.yml"'''
 
         command = command_template.format(
@@ -137,77 +143,34 @@ class WordPress:
             WORDPRESS_TABLE_PREFIX=table_prefix
         )
 
-        result = container.exec_run(command, stdout=True, stderr=True, tty=True)
-
+        container.exec_run(command, stdout=True, stderr=True, tty=True)
 
 
         # Define the URL
         site_url = f"http://localhost:{host_port}"
-        result =  container.exec_run(f"curl -sO http://ftp.de.debian.org/debian/pool/main/libe/libedit/libedit2_3.1-20191231-2+b1_amd64.deb && dpkg -i libedit2_3.1-20191231-2+b1_amd64.deb", stdout=True, stderr=True, tty=True)
-        print(result.output)
+
+        """
+         The official wordpress image dont have wp-cli installed, that's ok we can just volume map the wp-cli right ?
+         Nope, the wp-cli has another dependency called mysql-client, without that wp-cli wont work.
+         Umm ok, couldnt we volume map that stand alone binary since all of the wp images are built on debian ?
+         Nope, the mysql-client requires libedit.so, at this point i got quite frustrated. One might ask why dont you
+         just install it every time you create the wp container ? This app spawns containers multiple times, i dont want to 
+         waste the network bandwidth. So on final try i mapped the .so file and it worked. But deep down i know i created a 
+         frankeinsteins monster.
+        """
+        container.exec_run(f"curl -sO http://ftp.de.debian.org/debian/pool/main/libe/libedit/libedit2_3.1-20191231-2+b1_amd64.deb && dpkg -i libedit2_3.1-20191231-2+b1_amd64.deb", stdout=True, stderr=True, tty=True)
 
 
-        result = container.exec_run(f"wp core install --path=/var/www/html --url={site_url} --title='Your Site Title' --admin_user=admin --admin_password=password --admin_email=admin@example.org --allow-root", stdout=True, stderr=True, tty=True)
-        # Print the output if needed
-        print(result.output)
+        """
+         Run the site installation with default parameters using wp cli
+        """
+        container.exec_run(f"wp core install --path=/var/www/html --url={site_url} --title='Your Site Title' --admin_user=admin --admin_password=password --admin_email=admin@example.org --allow-root", stdout=True, stderr=True, tty=True)
 
-        # If multi_site is True, configure it via wp-cli
+
         if multi_site:
             wp_cli_command = f"docker exec {container.id} wp core multisite-convert --allow-root"
             subprocess.run(wp_cli_command, shell=True)
 
-
-        # # Assuming site_url is already defined
-        # install_endpoint = f"{site_url}/wp-admin/install.php?step=2"
-        #
-        # # Define headers and form data
-        # headers = {
-        #     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
-        #     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        #     'Accept-Language': 'en-US,en;q=0.5',
-        #     'Accept-Encoding': 'gzip, deflate, br',
-        #     'Content-Type': 'application/x-www-form-urlencoded',
-        #     'Origin': site_url,
-        #     'Connection': 'keep-alive',
-        #     'Referer': f"{site_url}/wp-admin/install.php?step=1",
-        #     'Upgrade-Insecure-Requests': '1',
-        #     'Sec-Fetch-Dest': 'document',
-        #     'Sec-Fetch-Mode': 'navigate',
-        #     'Sec-Fetch-Site': 'same-origin',
-        #     'Sec-Fetch-User': '?1'
-        # }
-        #
-        # form_data = {
-        #     'weblog_title': 'test',
-        #     'user_name': 'admin',
-        #     'admin_password': 'password',
-        #     'admin_password2': 'password',
-        #     'pw_weak': 'on',
-        #     'admin_email': 'admin@example.org',
-        #     'Submit': 'Install WordPress',
-        #     'language': ''
-        # }
-        #
-        # # Wait for the endpoint to be ready
-        # max_attempts = 10
-        # current_attempt = 0
-        #
-        # while current_attempt < max_attempts:
-        #     try:
-        #         response = requests.get(install_endpoint)
-        #         if response.status_code == 200:
-        #             break
-        #     except Exception as e:
-        #         print(f"Error: {e}")
-        #
-        #     current_attempt += 1
-        #     time.sleep(5)  # Wait for 5 seconds before re-attempting
-        #
-        # # Continue with the installation process
-        # if current_attempt < max_attempts:
-        #     response = requests.post(install_endpoint, headers=headers, data=form_data, timeout=300)
-        # else:
-        #     print("Endpoint did not become ready within the specified attempts.")
 
         return site_url, container.attrs['Id']
 
