@@ -121,7 +121,8 @@ class WordPress:
             },
             volumes={
                 f"{deps_path}/wp": {"bind": "/usr/local/bin/wp", "mode": "ro"},
-                f"{deps_path}/mysql": {"bind": "/usr/bin/mysql", "mode": "ro"}
+                f"{deps_path}/mysql": {"bind": "/usr/bin/mysql", "mode": "ro"},
+                f"{deps_path}/libedit.deb": {"bind": "/tmp/libedit.deb", "mode": "ro"}
             },
             network="1clickwp_network",
             detach=True
