@@ -1,9 +1,10 @@
 import os
+# Generate a random prefix for tables
+import random
+import string
 import subprocess
-import time
 
 import docker
-import requests
 
 
 class DB:
@@ -93,9 +94,7 @@ class WordPress:
         else:
             host_port = 10000
         print("using port " + str(host_port))
-        # Generate a random prefix for tables
-        import random
-        import string
+
         table_prefix = ''.join(random.choice(string.ascii_lowercase) for i in range(6)) + str(host_port)
 
         # Create the WordPress container
@@ -161,7 +160,7 @@ class WordPress:
         """
 
         logs = container.exec_run(
-            f"bash -c 'dpkg -i /tmp/libedit.deb && wp core install --path=/var/www/html --url={site_url} --title=\"Your Site Title\" --admin_user=admin --admin_password=password --admin_email=admin@example.org --allow-root'",
+            f"bash -c 'dpkg -i /tmp/libedit.deb && wp core install --path=/var/www/html --url={site_url} --title=\"Your Site Title\" --admin_user=admin --admin_password=password --admin_email=admin@example.org --allow-root && wp option update permalink_structure '/%postname%/' --allow-root'",
             stdout=True, stderr=True, tty=True)
         print(logs)
 
