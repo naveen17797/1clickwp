@@ -2,7 +2,10 @@
 
 ![Trade Offer](./images/trade-offer.jpg)
 
-1ClickWP is a powerful open-source tool that allows you to effortlessly create WordPress sites with just a single click. Whether you need a single WordPress site or a multisite network, 1ClickWP has got you covered.
+1ClickWP is a powerful open-source tool that allows you to effortlessly create WordPress sites with just a single click. Whether you need a single WordPress site or a multisite network, 1ClickWP has got you covered.     
+
+![1clickwp](https://github.com/naveen17797/1clickwp/assets/18109258/a83def81-9d27-44e5-939b-7cf1c637ce29)
+
 
 
 ## Features
