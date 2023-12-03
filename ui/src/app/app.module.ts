@@ -23,12 +23,14 @@ import {NzDividerModule} from "ng-zorro-antd/divider";
 import {NzCardModule} from "ng-zorro-antd/card";
 import {NzIconModule} from "ng-zorro-antd/icon";
 import {NzEmptyModule} from "ng-zorro-antd/empty";
+import { CreateFormComponent } from './create-form/create-form.component';
 
 registerLocaleData(en);
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    CreateFormComponent
   ],
   imports: [
     BrowserModule,

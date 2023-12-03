@@ -31,24 +31,7 @@
       <!-- Left Column (List of Sites) -->
       <nz-col nzSpan="24">
         <nz-card nzTitle="Dashboard">
-          <form nz-form [nzLayout]="'inline'" [formGroup]="siteForm" (ngSubmit)="createSite()" >
-            <nz-form-item>
-              <nz-form-label [nzSpan]="16">WordPress Version</nz-form-label>
-              <nz-form-control [nzSpan]="16">
-                <input nz-input formControlName="version" required />
-              </nz-form-control>
-            </nz-form-item>
-            <nz-form-item>
-              <nz-form-control [nzSpan]="16" [nzOffset]="8">
-                <label nz-checkbox formControlName="multi_site">Multisite</label>
-              </nz-form-control>
-            </nz-form-item>
-            <nz-form-item style="margin-left:20px;">
-              <button nz-button nzType="primary" nzGhost type="submit">Create WP Site</button>
-            </nz-form-item>
-          </form>
-
-
+          <app-create-form [siteForm]="siteForm" (onSubmitted)="createSite()"></app-create-form>
           <nz-table #sitesTable [nzData]="sites" [nzBordered]="true" id="sites_table" [nzLoading]="loading" [nzNoResult]="noSites">
             <thead>
             <tr>
