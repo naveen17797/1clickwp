@@ -1,4 +1,4 @@
-<form nz-form [formGroup]="siteForm" (ngSubmit)="this.onSubmitted.next(true)" >
+<form  *ngIf="siteForm" nz-form nzLayout="inline" [formGroup]="siteForm" (ngSubmit)="this.onSubmitted.next(true)" >
   <nz-form-item>
     <nz-form-label [nzSpan]="16">WordPress Version</nz-form-label>
     <nz-form-control [nzSpan]="16">

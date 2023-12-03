@@ -30,34 +30,57 @@
     <div nz-row nzJustify="center"  class="main">
       <!-- Left Column (List of Sites) -->
       <nz-col nzSpan="24">
-        <nz-card nzTitle="Dashboard">
-          <app-create-form [siteForm]="siteForm" (onSubmitted)="createSite()"></app-create-form>
-          <nz-table #sitesTable [nzData]="sites" [nzBordered]="true" id="sites_table" [nzLoading]="loading" [nzNoResult]="noSites">
-            <thead>
-            <tr>
-              <th>WP Version</th>
-              <th>Multisite</th>
-              <th>URL</th>
-              <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr *ngFor="let site of sites">
-              <td>{{ site.version }}</td>
-              <td>{{ site.multi_site ? 'Yes' : 'No' }}</td>
-              <td>{{ site.url }}</td>
-              <td>
-                <a [href]="site.admin_url + '?auto_login=true'" nzGhost target="_blank" nz-button nzType="primary">1 Click Login</a>
-                <nz-divider nzType="vertical"></nz-divider>
-                <a [href]="site.admin_url" nzGhost target="_blank" nz-button nzType="primary">Wp-Admin</a>
-                <nz-divider nzType="vertical"></nz-divider>
-                <button nz-button nzType="default" nzDanger (click)="deleteSite(site.id)">Delete</button>
+        <nz-space nzDirection="vertical" nzSize="large">
+          <nz-card *nzSpaceItem nzTitle="Dashboard">
+            <app-create-form [siteForm]="siteForm" (onSubmitted)="createSite()"></app-create-form>
+            <nz-table #sitesTable [nzData]="sites" [nzBordered]="true" id="sites_table" [nzLoading]="loading" [nzNoResult]="noSites">
+              <thead>
+              <tr>
+                <th>WP Version</th>
+                <th>Multisite</th>
+                <th>URL</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let site of sites">
+                <td>{{ site.version }}</td>
+                <td>{{ site.multi_site ? 'Yes' : 'No' }}</td>
+                <td>{{ site.url }}</td>
+                <td>
+                  <a [href]="site.admin_url + '?auto_login=true'" nzGhost target="_blank" nz-button nzType="primary">1 Click Login</a>
+                  <nz-divider nzType="vertical"></nz-divider>
+                  <a [href]="site.admin_url" nzGhost target="_blank" nz-button nzType="primary">Wp-Admin</a>
+                  <nz-divider nzType="vertical"></nz-divider>
+                  <button nz-button nzType="default" nzDanger (click)="deleteSite(site.id)">Delete</button>
 
-              </td>
-            </tr>
-            </tbody>
-          </nz-table>
-        </nz-card>
+                </td>
+              </tr>
+              </tbody>
+            </nz-table>
+          </nz-card>
+
+          <nz-card *nzSpaceItem nzTitle="Volume Bindings" [formGroup]="siteForm">
+            <h4>Volume bindings allow you to map your host directory to a folder inside wordpress container.</h4>
+            <h5>New bindings will only be applied to sites created after that.</h5>
+            <br/>
+            <div formArrayName="volume_bindings">
+              <div *ngFor="let binding of volumeBindings.controls; let i = index">
+
+                <nz-row [formGroup]="volumeBindings.at(i)">
+
+                  <nz-space nzDirection="horizontal" nzSize="small">
+                    <input *nzSpaceItem class="volume-binding-input" nz-input required formControlName="hostpath" placeholder="Host Path">
+                    <input *nzSpaceItem  class="volume-binding-input" nz-input required formControlName="containerPath" placeholder="Container Path">
+                    <button *nzSpaceItem type="button" nz-button nzDanger (click)="removeVolumeBindingRow(i)">-</button>
+                  </nz-space>
+                </nz-row>
+              </div>
+              <br/>
+              <button nz-button type="button" (click)="addVolumeBindingRow()">Add New Binding</button>
+            </div>
+          </nz-card>
+        </nz-space>
       </nz-col>
 
 

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {FormBuilder, FormGroup, Validators} from "@angular/forms";
+import {FormArray, FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
+import {environment} from "../environments/environment";
 
 @Component({
   selector: 'app-root',
@@ -12,17 +13,50 @@ export class AppComponent {
 
   multisite = false;
   sites: any[] = [];
-
-
-
   siteForm: FormGroup;
 
 
   constructor(private http: HttpClient, private fb: FormBuilder) {
+    let existing = []
+    try {
+      // @ts-ignore
+      existing = JSON.parse(localStorage.getItem('volume_bindings'))
+      existing = existing.map((e: { hostpath: any; containerPath: any; }) => this.fb.group({
+        hostpath: [e.hostpath, Validators.required],
+        containerPath: [e.containerPath, Validators.required]
+      }))
+    }
+    catch (e) {
+
+    }
+
+
     this.siteForm = this.fb.group({
       version: ['6.0.0', Validators.required],
-      multi_site: [false]
+      multi_site: [false],
+      // @ts-ignore
+      volume_bindings: this.fb.array(existing)
     });
+  }
+
+  // Getter for easier access to the volume_bindings form array
+  get volumeBindings(): FormArray<FormGroup> {
+    return this.siteForm.get('volume_bindings') as FormArray;
+  }
+
+  // Function to add a new row to the form array
+  addVolumeBindingRow() {
+    const newRow = this.fb.group({
+      hostpath: ['', Validators.required],
+      containerPath: ['', Validators.required]
+    });
+
+    this.volumeBindings.push(newRow);
+  }
+
+  // Function to remove a row from the form array
+  removeVolumeBindingRow(index: number) {
+    this.volumeBindings.removeAt(index);
   }
 
   ngOnInit() {
@@ -31,7 +65,7 @@ export class AppComponent {
   }
 
   checkImage() {
-    this.http.get('/images/mysql:5.7').subscribe(
+    this.http.get(environment.baseUrl + '/images/mysql:5.7').subscribe(
       () => {
         this.loading = false;
       },
@@ -42,7 +76,7 @@ export class AppComponent {
   }
 
   pullImage() {
-    this.http.post('/images/mysql:5.7/pulls', {}).subscribe(
+    this.http.post(environment.baseUrl + '/images/mysql:5.7/pulls', {}).subscribe(
       () => {
         this.checkImage();
       },
@@ -56,7 +90,9 @@ export class AppComponent {
     this.loading = true
     const body = this.siteForm.value
 
-    this.http.post('/sites', body).subscribe(
+    localStorage.setItem('volume_bindings', JSON.stringify(body.volume_bindings))
+
+    this.http.post(environment.baseUrl + '/sites', body).subscribe(
       () => {
         this.loading = false
         this.listSites();
@@ -69,7 +105,7 @@ export class AppComponent {
 
   listSites() {
     this.loading = true
-    this.http.get<any[]>('/sites').subscribe(
+    this.http.get<any[]>(environment.baseUrl + '/sites').subscribe(
       sites => {
         this.sites = sites;
       },
@@ -83,7 +119,7 @@ export class AppComponent {
 
   deleteSite(siteId: string) {
     this.loading = true
-    this.http.delete(`/sites/${siteId}`).subscribe(
+    this.http.delete(environment.baseUrl + `/sites/${siteId}`).subscribe(
       () => {
         this.loading = false
         this.listSites();
