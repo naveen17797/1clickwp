@@ -70,8 +70,8 @@
                 <nz-row [formGroup]="volumeBindings.at(i)">
 
                   <nz-space nzDirection="horizontal" nzSize="small">
-                    <input *nzSpaceItem class="volume-binding-input" nz-input required formControlName="hostpath" placeholder="Host Path">
-                    <input *nzSpaceItem  class="volume-binding-input" nz-input required formControlName="containerPath" placeholder="Container Path">
+                    <input *nzSpaceItem class="volume-binding-input" nz-input required formControlName="host_path" placeholder="Host Path">
+                    <input *nzSpaceItem  class="volume-binding-input" nz-input required formControlName="container_path" placeholder="Container Path">
                     <button *nzSpaceItem type="button" nz-button nzDanger (click)="removeVolumeBindingRow(i)">-</button>
                   </nz-space>
                 </nz-row>

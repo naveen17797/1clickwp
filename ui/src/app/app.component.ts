@@ -21,13 +21,13 @@ export class AppComponent {
     try {
       // @ts-ignore
       existing = JSON.parse(localStorage.getItem('volume_bindings'))
-      existing = existing.map((e: { hostpath: any; containerPath: any; }) => this.fb.group({
-        hostpath: [e.hostpath, Validators.required],
-        containerPath: [e.containerPath, Validators.required]
+      existing = existing.map((e: { host_path: any; container_path: any; }) => this.fb.group({
+        host_path: [e.host_path, Validators.required],
+        container_path: [e.container_path, Validators.required]
       }))
     }
     catch (e) {
-
+      existing = []
     }
 
 
@@ -47,8 +47,8 @@ export class AppComponent {
   // Function to add a new row to the form array
   addVolumeBindingRow() {
     const newRow = this.fb.group({
-      hostpath: ['', Validators.required],
-      containerPath: ['', Validators.required]
+      host_path: ['', Validators.required],
+      container_path: ['', Validators.required]
     });
 
     this.volumeBindings.push(newRow);
