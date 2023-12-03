@@ -23,34 +23,38 @@ import {NzDividerModule} from "ng-zorro-antd/divider";
 import {NzCardModule} from "ng-zorro-antd/card";
 import {NzIconModule} from "ng-zorro-antd/icon";
 import {NzEmptyModule} from "ng-zorro-antd/empty";
+import { CreateFormComponent } from './create-form/create-form.component';
+import {NzSpaceModule} from "ng-zorro-antd/space";
 
 registerLocaleData(en);
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    CreateFormComponent
   ],
-  imports: [
-    BrowserModule,
-    FormsModule,
-    HttpClientModule,
-    BrowserAnimationsModule,
-    NzLayoutModule,
-    NzBreadCrumbModule,
-    NzPageHeaderModule,
-    NzSpinModule,
-    NzFormModule,
-    NzButtonModule,
-    NzCheckboxModule,
-    NzInputModule,
-    ReactiveFormsModule,
-    NzTypographyModule,
-    NzTableModule,
-    NzDividerModule,
-    NzCardModule,
-    NzIconModule,
-    NzEmptyModule
-  ],
+    imports: [
+        BrowserModule,
+        FormsModule,
+        HttpClientModule,
+        BrowserAnimationsModule,
+        NzLayoutModule,
+        NzBreadCrumbModule,
+        NzPageHeaderModule,
+        NzSpinModule,
+        NzFormModule,
+        NzButtonModule,
+        NzCheckboxModule,
+        NzInputModule,
+        ReactiveFormsModule,
+        NzTypographyModule,
+        NzTableModule,
+        NzDividerModule,
+        NzCardModule,
+        NzIconModule,
+        NzEmptyModule,
+        NzSpaceModule
+    ],
   providers: [
     { provide: NZ_I18N, useValue: en_US }
   ],

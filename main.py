@@ -2,12 +2,21 @@ import docker
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
-
+from fastapi.middleware.cors import CORSMiddleware
 from utils import DB
 from routers import sites, images
 
 
 app = FastAPI()
+origins = ["http://localhost:4200"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(sites.router)
 app.include_router(images.router)
 app.mount("/ui", StaticFiles(directory="ui/dist/ui/"))

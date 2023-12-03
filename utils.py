@@ -75,7 +75,7 @@ class WordPress:
 
 
 
-    def create_instance(self, version, multi_site):
+    def create_instance(self, version, multi_site, volume_bindings):
         # Define image name based on provided version
         image_name = f"wordpress:{version}"
         label = 'multi_site' if multi_site else ''
@@ -100,6 +100,20 @@ class WordPress:
         # Create the WordPress container
         # Create the WordPress container
         deps_path = os.path.abspath('deps')
+        volumes = {
+                f"{deps_path}/wp": {"bind": "/usr/local/bin/wp", "mode": "ro"},
+                f"{deps_path}/mysql": {"bind": "/usr/bin/mysql", "mode": "ro"},
+                f"{deps_path}/libedit.deb": {"bind": "/tmp/libedit.deb", "mode": "ro"},
+                f"{deps_path}/mu-plugins/load.php": {"bind": "/var/www/html/wp-content/mu-plugins/load.php", "mode": "ro"},
+                f"{deps_path}/mu-plugins/auto-login.php": {"bind": "/var/www/html/wp-content/mu-plugins/auto-login.php",
+                                                     "mode": "ro"}
+            }
+
+        for v in volume_bindings:
+            volumes[v.host_path] = {"bind": v.container_path, "mode": "ro"}
+
+
+
 
         container = self.client.containers.run(
             image=image_name,
@@ -112,14 +126,7 @@ class WordPress:
                 "WORDPRESS_DB_NAME": "1clickwp_db",  # Set the database name
                 "WORDPRESS_TABLE_PREFIX": table_prefix  # Set the table prefix
             },
-            volumes={
-                f"{deps_path}/wp": {"bind": "/usr/local/bin/wp", "mode": "ro"},
-                f"{deps_path}/mysql": {"bind": "/usr/bin/mysql", "mode": "ro"},
-                f"{deps_path}/libedit.deb": {"bind": "/tmp/libedit.deb", "mode": "ro"},
-                f"{deps_path}/mu-plugins/load.php": {"bind": "/var/www/html/wp-content/mu-plugins/load.php", "mode": "ro"},
-                f"{deps_path}/mu-plugins/auto-login.php": {"bind": "/var/www/html/wp-content/mu-plugins/auto-login.php",
-                                                     "mode": "ro"}
-            },
+            volumes=volumes,
             network="1clickwp_network",
             detach=True
         )

@@ -15,7 +15,7 @@ async def create(site: Site):
     # steps
     # 1. create a wp container
     # 2. if multisite configure it via wp-cli
-    url, id =  wp.create_instance(site.version, site.multi_site)
+    url, id =  wp.create_instance(site.version, site.multi_site, site.volume_bindings)
     admin_url = f"{url}/wp-login.php"
     site.url = url
     site.id = id
@@ -32,7 +32,7 @@ async def get():
         version = attrs['Config']['Image'].split(':')[1]
         multi_site = True if 'multi_site' in name else False
         url = f"http://localhost:{attrs['HostConfig']['PortBindings']['80/tcp'][0]['HostPort']}"
-        site = Site(version=version, multi_site=multi_site, url=url, admin_url=f"{url}/wp-admin", id=attrs['Id'])
+        site = Site(version=version, multi_site=multi_site, url=url, admin_url=f"{url}/wp-admin", id=attrs['Id'], volume_bindings=[])
         sites.append(site.dict())
     return sites
 
