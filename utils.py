@@ -175,6 +175,16 @@ class WordPress:
             wp_cli_command = f"docker exec {container.id} wp core multisite-convert --allow-root"
             subprocess.run(wp_cli_command, shell=True)
 
+        """
+        Just another hack to get the cron working since the wp official image cron dont work if we bind it to a custom port
+        So this forces apache to listen to host port inside container which is crucial for the cron to work.
+        Every Day. We stray further from god.
+        """
+        apache_config_command = '''bash -c "sed -i 's/<VirtualHost \*:80>/<VirtualHost \*:80 *:{}>/' /etc/apache2/sites-enabled/000-default.conf && sed -i '/Listen 80/a Listen {}' /etc/apache2/ports.conf && apachectl restart"'''\
+            .format(host_port, host_port)
+        container.exec_run(apache_config_command, stdout=True, stderr=True, tty=True)
+
+
 
         return site_url, container.attrs['Id']
 
