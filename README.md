@@ -31,5 +31,4 @@ http://localhost:8000
 ```
 
 ### Screenshots
-
-![Ui![img.png](img.png)](./images/ui.png)
+![image](https://github.com/naveen17797/1clickwp/assets/18109258/e2227626-7bdd-4ac2-9251-09ed517e5494)
