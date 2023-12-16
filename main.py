@@ -45,3 +45,4 @@ async def cleanup():
     stop_and_remove_containers("1clickwp")
     db = DB()
     db.init_db()
+    db.init_phpmyadmin()

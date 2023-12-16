@@ -15,11 +15,12 @@ async def create(site: Site):
     # steps
     # 1. create a wp container
     # 2. if multisite configure it via wp-cli
-    url, id =  wp.create_instance(site.version, site.multi_site, site.volume_bindings)
+    url, id, table_prefix =  wp.create_instance(site.version, site.multi_site, site.volume_bindings)
     admin_url = f"{url}/wp-login.php"
     site.url = url
     site.id = id
     site.admin_url = admin_url
+    site.phpmyadmin_url = f"http://localhost:9999/index.php?route=/database/structure&db=1clickwp_db&prefix={table_prefix}"
     return site
 
 @router.get("/sites")
@@ -32,7 +33,8 @@ async def get():
         version = attrs['Config']['Image'].split(':')[1]
         multi_site = True if 'multi_site' in name else False
         url = f"http://localhost:{attrs['HostConfig']['PortBindings']['80/tcp'][0]['HostPort']}"
-        site = Site(version=version, multi_site=multi_site, url=url, admin_url=f"{url}/wp-admin", id=attrs['Id'], volume_bindings=[])
+        phpmyadmin_url = f"http://localhost:9999/index.php?route=/database/structure&db=1clickwp_db&prefix={instance.labels['table_prefix']}"
+        site = Site(version=version, multi_site=multi_site, url=url, admin_url=f"{url}/wp-admin", id=attrs['Id'], volume_bindings=[], phpmyadmin_url=phpmyadmin_url)
         sites.append(site.dict())
     return sites
 

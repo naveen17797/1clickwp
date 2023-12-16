@@ -52,6 +52,8 @@
                   <nz-divider nzType="vertical"></nz-divider>
                   <a [href]="site.admin_url" nzGhost target="_blank" nz-button nzType="primary">Wp-Admin</a>
                   <nz-divider nzType="vertical"></nz-divider>
+                  <a [href]="site.phpmyadmin_url" target="_blank" nz-button nzType="primary">PHPMyAdmin URL</a>
+                  <nz-divider nzType="vertical"></nz-divider>
                   <button nz-button nzType="default" nzDanger (click)="deleteSite(site.id)">Delete</button>
 
                 </td>

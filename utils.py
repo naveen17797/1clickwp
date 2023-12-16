@@ -25,6 +25,47 @@ class DB:
             self.network = self.client.networks.create(network_name, driver="bridge")
         else:
             self.network = existing_network
+    def init_phpmyadmin(self):
+        # Check if a container named '1clickwp_db' already exists
+        phpmyadmin_container = None
+        try:
+            phpmyadmin_container = self.client.containers.get('1clickwp_phpmyadmin')
+        except docker.errors.NotFound:
+            pass
+
+        if phpmyadmin_container is not None and phpmyadmin_container.status == "running":
+            print("Container '1clickwp_phpmyadmin' is already running.")
+        else:
+            # Start the container if it exists but is not running
+            if phpmyadmin_container is not None:
+                try:
+                    phpmyadmin_container.start()
+                    print("Container '1clickwp_phpmyadmin' started.")
+                except Exception as e:
+                    print(f"Error starting container: {e}")
+            else:
+                # Define container configuration
+                container_config = {
+                    'image': 'phpmyadmin:apache',
+                    'environment': {
+                        'PMA_HOST': '1clickwp_db',
+                        'PMA_PORT': '3306',
+                        'PMA_USER': 'root',
+                        'PMA_PASSWORD': 'password',
+                        'MYSQL_ROOT_PASSWORD': 'password'
+                    },
+                    'name': '1clickwp_phpmyadmin',
+                    'network': '1clickwp_network',
+                    'ports': {f"80/tcp": ('127.0.0.1', 9999)},
+                }
+
+                # Create and start the container
+                try:
+                    print("Going to create phpmyadmin instance, this might take few mins..")
+                    container = self.client.containers.run(**container_config, detach=True)
+                    print(f'Container ID: {container.id}')
+                except Exception as e:
+                    print(f"Error creating container or database: {e}")
 
     def init_db(self):
         # Check if a container named '1clickwp_db' already exists
@@ -40,6 +81,7 @@ class DB:
             # Start the container if it exists but is not running
             if db_container is not None:
                 try:
+                    print("Going to start database container, this might take few mins..")
                     db_container.start()
                     print("Container '1clickwp_db' started.")
                 except Exception as e:
@@ -58,6 +100,7 @@ class DB:
 
                 # Create and start the container
                 try:
+                    print("Going to create database container, this might take few mins..")
                     container = self.client.containers.run(**container_config, detach=True)
                     print(f'Container ID: {container.id}')
                 except Exception as e:
@@ -95,7 +138,7 @@ class WordPress:
             host_port = 10000
         print("using port " + str(host_port))
 
-        table_prefix = ''.join(random.choice(string.ascii_lowercase) for i in range(6)) + str(host_port)
+        table_prefix = ''.join(random.choice(string.ascii_lowercase) for i in range(6)).replace(" ", "") + '_' + str(host_port)
 
         # Create the WordPress container
         # Create the WordPress container
@@ -116,6 +159,9 @@ class WordPress:
 
 
         container = self.client.containers.run(
+            labels= {
+                "table_prefix": table_prefix
+            },
             image=image_name,
             name=f"1clickwp_wp_container_{label}_{host_port}",
             ports={f"80/tcp": ('127.0.0.1', host_port)},
@@ -178,7 +224,7 @@ class WordPress:
         """
         Just another hack to get the cron working since the wp official image cron dont work if we bind it to a custom port
         So this forces apache to listen to host port inside container which is crucial for the cron to work.
-        Every Day. We stray further from god.
+        Every Day. We stray further from god's light.
         """
         apache_config_command = '''bash -c "sed -i 's/<VirtualHost \*:80>/<VirtualHost \*:80 *:{}>/' /etc/apache2/sites-enabled/000-default.conf && sed -i '/Listen 80/a Listen {}' /etc/apache2/ports.conf && apachectl restart"'''\
             .format(host_port, host_port)
@@ -186,7 +232,7 @@ class WordPress:
 
 
 
-        return site_url, container.attrs['Id']
+        return site_url, container.attrs['Id'], table_prefix
 
     def delete_instance(self, site_id):
         container = self.client.containers.get(site_id)

@@ -14,3 +14,4 @@ class Site(BaseModel):
     volume_bindings: List[VolumeBinding]
     url: str = None  # Optional field, initialized to None
     admin_url: str = None  # Optional field, initialized to None
+    phpmyadmin_url:str = None
