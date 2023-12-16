@@ -10,6 +10,8 @@
 
 - Single-click WordPress site creation
 - Multisite functionality for managing multiple WordPress sites from a single installation
+- phpmyadmin available for every site
+- Ability to bind local plugin / theme folders in to WP
 - Built with FastAPI for blazing-fast performance
 
 ### Prerequisites
