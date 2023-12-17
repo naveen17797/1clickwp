@@ -15,7 +15,7 @@ async def create(site: Site):
     # steps
     # 1. create a wp container
     # 2. if multisite configure it via wp-cli
-    url, id, table_prefix =  wp.create_instance(site.version, site.multi_site, site.volume_bindings)
+    url, id, table_prefix =  wp.create_instance(site.version, site.multi_site, site.volume_bindings, site.memory, site.cpu, site.wp_debug)
     admin_url = f"{url}/wp-login.php"
     site.url = url
     site.id = id

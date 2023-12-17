@@ -15,3 +15,6 @@ class Site(BaseModel):
     url: str = None  # Optional field, initialized to None
     admin_url: str = None  # Optional field, initialized to None
     phpmyadmin_url:str = None
+    cpu:str = None
+    memory:str = None
+    wp_debug:bool = True

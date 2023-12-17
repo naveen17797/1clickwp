@@ -118,7 +118,7 @@ class WordPress:
 
 
 
-    def create_instance(self, version, multi_site, volume_bindings):
+    def create_instance(self, version, multi_site, volume_bindings, mem_limit, cpu_limit, wp_debug):
         # Define image name based on provided version
         image_name = f"wordpress:{version}"
         label = 'multi_site' if multi_site else ''
@@ -156,7 +156,15 @@ class WordPress:
             volumes[v.host_path] = {"bind": v.container_path, "mode": "ro"}
 
 
-
+        env = {
+                "WORDPRESS_DB_HOST": "1clickwp_db",
+                "WORDPRESS_DB_USER": "root",
+                "WORDPRESS_DB_PASSWORD": "password",
+                "WORDPRESS_DB_NAME": "1clickwp_db",  # Set the database name
+                "WORDPRESS_TABLE_PREFIX": table_prefix  # Set the table prefix
+            }
+        if wp_debug:
+            env["WORDPRESS_DEBUG"] = "1"
 
         container = self.client.containers.run(
             labels= {
@@ -165,16 +173,12 @@ class WordPress:
             image=image_name,
             name=f"1clickwp_wp_container_{label}_{host_port}",
             ports={f"80/tcp": ('127.0.0.1', host_port)},
-            environment={
-                "WORDPRESS_DB_HOST": "1clickwp_db",
-                "WORDPRESS_DB_USER": "root",
-                "WORDPRESS_DB_PASSWORD": "password",
-                "WORDPRESS_DB_NAME": "1clickwp_db",  # Set the database name
-                "WORDPRESS_TABLE_PREFIX": table_prefix  # Set the table prefix
-            },
+            environment=env,
             volumes=volumes,
             network="1clickwp_network",
-            detach=True
+            detach=True,
+            mem_limit=mem_limit,
+            cpuset_cpus=cpu_limit
         )
 
         """

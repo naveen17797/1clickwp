@@ -35,7 +35,10 @@ export class AppComponent {
       version: ['6.0.0', Validators.required],
       multi_site: [false],
       // @ts-ignore
-      volume_bindings: this.fb.array(existing)
+      volume_bindings: this.fb.array(existing),
+      cpu: [''],
+      memory: [''],
+      wp_debug: [true]
     });
   }
 
