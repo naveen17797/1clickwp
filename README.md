@@ -33,4 +33,5 @@ http://localhost:8000
 ```
 
 ### Screenshots
-![image](https://github.com/naveen17797/1clickwp/assets/18109258/e2227626-7bdd-4ac2-9251-09ed517e5494)
+![image](https://github.com/naveen17797/1clickwp/assets/18109258/58dee895-639a-46fe-b5ab-1c8cfc0fb728)
+
