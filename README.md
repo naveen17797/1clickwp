@@ -37,6 +37,10 @@ you can now access the ui at
 http://localhost:8000
 ```
 
+### Installation via docker
+
+
 ### Screenshots
 ![image](https://github.com/naveen17797/1clickwp/assets/18109258/58dee895-639a-46fe-b5ab-1c8cfc0fb728)
+
 
