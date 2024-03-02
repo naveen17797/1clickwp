@@ -1,6 +1,6 @@
 # 1ClickWP 
 <span style="padding: 5px 10px; background-color: #4CAF50; color: #000000; font-weight: bold; border-radius: 3px;">
-Version: 1.0.5
+Version: 1.0.6
 </span>
 
 ![image](https://github.com/naveen17797/1clickwp/assets/18109258/02fd4920-18b6-4a9b-bb78-c5339a995db7)
