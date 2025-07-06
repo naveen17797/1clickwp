@@ -10,7 +10,11 @@
 
 from fastapi import FastAPI
 
+from core import Core
+
 app = FastAPI()
+core = Core()
+core.init()
 
 
 @app.get("/sites")

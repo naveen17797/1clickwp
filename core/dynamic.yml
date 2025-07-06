@@ -1,0 +1,19 @@
+http:
+  routers:
+    local:
+      rule: "HostRegexp(`{subdomain:.+}.localhost`)"
+      entryPoints:
+        - websecure
+      service: local-service
+      tls: {}   # <-- This is the key line!
+
+  services:
+    local-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8080"
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
