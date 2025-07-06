@@ -17,9 +17,10 @@ class Core:
 
     def pull_image(self):
         """Pull the Traefik image (if not already pulled)"""
-        print(f"Pulling image {self.TRAEFIK_IMAGE}...")
-        self.client.images.pull(self.TRAEFIK_IMAGE)
-        print("Image pulled.")
+        if not self.client.images.get(self.TRAEFIK_IMAGE):
+            print(f"Pulling image {self.TRAEFIK_IMAGE}...")
+            self.client.images.pull(self.TRAEFIK_IMAGE)
+            print("Image pulled.")
 
     def get_config_paths(self):
         """Return absolute paths to static and dynamic config files"""
