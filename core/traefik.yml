@@ -4,12 +4,13 @@ entryPoints:
   websecure:
     address: ":443"
 
-providers:
-  file:
-    filename: /etc/traefik/dynamic.yml
-
 api:
   dashboard: true
+  insecure: true
 
-log:
-  level: DEBUG
+providers:
+  docker:
+    exposedByDefault: false
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true

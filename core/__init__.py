@@ -1,10 +1,33 @@
-from core.db_manager import DBManager
-from core.phpmyadmin_manager import PhpMyAdminManager
-from core.proxy import Proxy
+from python_on_whales import DockerClient
+from pathlib import Path
 
+compose_path = Path(__file__).resolve().parent / "docker-compose.yml"
+docker = DockerClient(compose_files=[compose_path])
 
 class Core:
-    def init(self):
-        Proxy().init()
-        DBManager().ensure_running()
-        PhpMyAdminManager().ensure_running()
+    def __init__(self):
+        # Get directory where this script is located
+        self.project_dir = Path(__file__).resolve().parent
+
+    def up(self):
+        print("Starting services...")
+        docker.compose.up(detach=True)
+        print("All services started.")
+
+    def down(self):
+        print("Stopping services...")
+        docker.compose.down()
+        print("All services stopped and removed.")
+
+    def restart(self):
+        print("Restarting services...")
+        self.down()
+        self.up()
+
+    def status(self):
+        print("Service status:")
+        docker.compose.ps()
+
+    def logs(self, follow=True):
+        print("Showing logs (Ctrl+C to exit)...")
+        docker.compose.logs(follow=follow)

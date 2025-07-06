@@ -14,7 +14,9 @@ from core import Core
 
 app = FastAPI()
 core = Core()
-core.init()
+core.down()
+core.up()
+core.status()
 
 
 @app.get("/sites")
