@@ -23,7 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
       - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
-      - ./letsencrypt:/letsencrypt
+
     restart: always
 
   db:
@@ -83,8 +83,3 @@ services:
 
 volumes:
   db_data:
-  letsencrypt:
-
-
-networks:
-  1clickwp:

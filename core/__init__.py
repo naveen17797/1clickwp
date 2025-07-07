@@ -16,7 +16,7 @@ class Core:
 
     def down(self):
         print("Stopping services...")
-        docker.compose.down()
+        docker.compose.down(volumes=True)
         print("All services stopped and removed.")
 
     def restart(self):
@@ -25,7 +25,6 @@ class Core:
         self.up()
 
     def status(self):
-        print("Service status:")
         docker.compose.ps()
 
     def logs(self, follow=True):
