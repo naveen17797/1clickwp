@@ -33,56 +33,67 @@
       }
     };
   </script>
-  <style>
-    * {
-      transition: all 0.2s ease-in-out;
-    }
-  </style>
 </head>
 
-<body class="bg-bunker-bg text-bunker-text font-mono min-h-screen flex items-center justify-center overflow-hidden px-6 py-10">
-  <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 bg-bunker-panel p-8 rounded-2xl border border-bunker-border shadow-2xl">
+<body class="bg-bunker-bg text-bunker-text font-mono min-h-screen flex flex-col">
 
-    <!-- Left: Site Creator -->
-    <div class="space-y-6 pr-4 md:pr-8 border-b md:border-b-0 md:border-r border-bunker-border">
-      <h1 class="text-2xl font-bold border-b border-bunker-border pb-2">Create New WordPress Site</h1>
-      <form id="createForm" class="space-y-4">
-        <label class="block text-sm font-semibold">
-          Site Name <span class="text-gray-500">(no spaces)</span>
-          <input type="text" id="siteName" value="my-first-site" autofocus required placeholder="my-wp-site"
-            class="mt-2 w-full bg-bunker-bg text-white border border-bunker-border px-3 py-2 text-sm rounded focus:outline-none focus:ring-2 focus:ring-bunker-link"/>
-        </label>
-        <button type="submit"
-          class="bg-bunker-link text-black font-bold text-sm px-4 py-2 rounded-md hover:bg-bunker-hover transition-layout w-full">
-          Create Site
-        </button>
-      </form>
+  <!-- Top Navigation Bar -->
+  <nav class="fixed top-0 left-0 w-full z-50 bg-bunker-panel border-b border-bunker-border px-6 py-3 flex items-center justify-between text-sm shadow-md">
+    <div class="flex items-center gap-2 font-bold text-bunker-link">
+      <img src="/static/1clickwp.png" alt="1ClickWP Logo" class="w-6 h-6 object-contain" />
+      1ClickWP
+    </div>
+    <div class="flex items-center gap-5 text-bunker-grayish">
+      <a href="https://naveenmuthusamy.com" target="_blank" class="hover:text-bunker-link transition">Blog</a>
+      <a href="https://github.com/naveen17797/1clickwp" target="_blank" class="hover:text-bunker-link transition">Contribute</a>
+      <a href="https://buymeacoffee.com/naveen17797" target="_blank" class="hover:text-bunker-link transition">☕ Support</a>
+    </div>
+  </nav>
 
-      <div class="text-xs text-bunker-grayish space-y-2 pt-4 border-t border-bunker-border">
-        <p class="text-bunker-link font-semibold uppercase pt-2">About</p>
-        <ul class="list-disc pl-5">
-          <li>Instant WordPress environments for local or dev use</li>
-          <li>No accounts or telemetry</li>
-          <li>Uses Docker, Traefik, and simple shell scripts</li>
-        </ul>
-        <p class="pt-3">
-          <a href="https://www.buymeacoffee.com/YOUR_HANDLE" target="_blank" class="text-bunker-link underline hover:text-bunker-hover">
-            Support development
-          </a>
-        </p>
+  <!-- Main Content -->
+  <main class="flex-1 pt-20 pb-16 px-6">
+    <div class="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 bg-bunker-panel p-8 rounded-2xl border border-bunker-border shadow-2xl">
+
+      <!-- Left: Site Creator -->
+      <div class="space-y-6 pr-4 md:pr-8 border-b md:border-b-0 md:border-r border-bunker-border">
+        <h1 class="text-2xl font-bold border-b border-bunker-border pb-2">Create New WordPress Site</h1>
+        <form id="createForm" class="space-y-4">
+          <label class="block text-sm font-semibold">
+            Site Name <span class="text-gray-500">(no spaces)</span>
+            <input type="text" id="siteName" value="my-first-site" autofocus required placeholder="my-wp-site"
+              class="mt-2 w-full bg-bunker-bg text-white border border-bunker-border px-3 py-2 text-sm rounded focus:outline-none focus:ring-2 focus:ring-bunker-link"/>
+          </label>
+          <button type="submit"
+            class="bg-bunker-link text-black font-bold text-sm px-4 py-2 rounded-md hover:bg-bunker-hover transition-layout w-full">
+            Create Site
+          </button>
+        </form>
+
+        <div class="text-xs text-bunker-grayish space-y-2 pt-4 border-t border-bunker-border">
+          <p class="text-bunker-link font-semibold uppercase pt-2">About</p>
+          <ul class="list-disc pl-5">
+            <li>Instant WordPress environments for local or dev use</li>
+            <li>No accounts or telemetry</li>
+            <li>Uses Docker, Traefik, and simple shell scripts</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Right: Active Sites -->
+      <div class="space-y-4 pl-4 md:pl-8">
+        <h2 class="text-xl font-bold border-b border-bunker-border pb-2">Active Sites</h2>
+        <ul id="siteList" class="space-y-3 text-sm"></ul>
       </div>
     </div>
+  </main>
 
-    <!-- Right: Active Sites -->
-    <div class="space-y-4 pl-4 md:pl-8">
-      <h2 class="text-xl font-bold border-b border-bunker-border pb-2">Active Sites</h2>
-      <ul id="siteList" class="space-y-3 text-sm"></ul>
-    </div>
-  </div>
+  <!-- Bottom Navigation Bar -->
+  <footer class="fixed bottom-0 left-0 w-full bg-bunker-panel border-t border-bunker-border py-3 text-center text-sm text-bunker-grayish">
+    Made with ❤️ from the land of Tamils.
+  </footer>
 
   <!-- JS Logic -->
   <script>
-    // Base64 URL-safe encoding (compatible with Python's urlsafe_b64encode)
     function base64url(input) {
       const encoded = btoa(unescape(encodeURIComponent(input)));
       return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -117,7 +128,7 @@
               <button class="bg-bunker-red text-white px-3 py-1 rounded-md text-xs hover:bg-red-600 transition">Delete</button>
             </div>
             <div class="flex flex-wrap gap-2 pt-2 text-xs">
-              <a href="https://${domain}/?auto-login=true" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">Auto-login</a>
+              <a href="https://${domain}/?auto_login=true" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">Auto-login</a>
               <a href="https://pma.localhost/index.php?route=/database/structure&db=1clickwp_wordpress_${siteId}" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">phpMyAdmin</a>
               <a href="https://${domain}/wp-admin" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">WP Admin</a>
             </div>
