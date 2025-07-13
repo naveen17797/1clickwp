@@ -82,6 +82,12 @@
 
   <!-- JS Logic -->
   <script>
+    // Base64 URL-safe encoding (compatible with Python's urlsafe_b64encode)
+    function base64url(input) {
+      const encoded = btoa(unescape(encodeURIComponent(input)));
+      return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
     async function loadSites() {
       const res = await fetch('/sites');
       const sites = await res.json();
@@ -94,20 +100,31 @@
       }
 
       for (const site of sites) {
+        const siteId = base64url(site.name);
+        const domain = site.domain;
+        const name = site.name;
+
         const li = document.createElement('li');
-        li.className = 'bg-bunker-bg border border-bunker-border p-3 rounded-lg flex justify-between items-center hover:border-bunker-link transition-layout';
+        li.className = 'bg-bunker-bg border border-bunker-border p-3 rounded-lg hover:border-bunker-link transition-layout';
 
         li.innerHTML = `
-          <div>
-            <a href="https://${site.domain}" target="_blank" class="font-semibold hover:underline text-bunker-link">${site.name}</a>
-            <p class="text-xs text-gray-500">${site.domain}</p>
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between items-center">
+              <div>
+                <a href="https://${domain}" target="_blank" class="font-semibold hover:underline text-bunker-link">${name}</a>
+                <p class="text-xs text-gray-500">${domain}</p>
+              </div>
+              <button class="bg-bunker-red text-white px-3 py-1 rounded-md text-xs hover:bg-red-600 transition">Delete</button>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-2 text-xs">
+              <a href="https://${domain}/?auto-login=true" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">Auto-login</a>
+              <a href="https://pma.localhost/index.php?route=/database/structure&db=1clickwp_wordpress_${siteId}" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">phpMyAdmin</a>
+              <a href="https://${domain}/wp-admin" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">WP Admin</a>
+            </div>
           </div>
-          <button class="bg-bunker-red text-white px-3 py-1 rounded-md text-xs hover:bg-red-600 transition">
-            Delete
-          </button>
         `;
 
-        li.querySelector('button').onclick = () => deleteSite(site.name);
+        li.querySelector('button').onclick = () => deleteSite(name);
         list.appendChild(li);
       }
     }

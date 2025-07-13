@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 import shutil
@@ -28,7 +29,8 @@ WORDPRESS_CONTAINER_PREFIX = "1clickwp_wordpress_"
 # -----------------------------
 
 def generate_site_id(name: str) -> str:
-    return md5(name.encode()).hexdigest()[:10]
+    b64 = base64.urlsafe_b64encode(name.encode('utf-8')).decode()
+    return b64.rstrip("=")  # optional: remove padding for cleaner URL
 
 def sanitize_name(name: str) -> str:
     # Keep only letters and hyphens
