@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 from hashlib import md5
 from pathlib import Path
 
@@ -31,7 +32,7 @@ def generate_site_id(name: str) -> str:
 
 def sanitize_name(name: str) -> str:
     # Keep only letters and hyphens
-    return re.sub(r'[^a-zA-Z\-]', '', name)
+    return re.sub(r'[^a-zA-Z0-9\-]', '', name)
 
 def get_container_name(site_id: str) -> str:
     return f"{WORDPRESS_CONTAINER_PREFIX}{site_id}"
@@ -160,12 +161,11 @@ def list_sites():
 
 @app.post("/sites")
 def create_site(name: str):
-
     def prepare_site_dir(container_name: str) -> str:
-
+        site_path = f"./sites/{container_name}"  # Adjust this base path as needed
         os.makedirs(site_path, exist_ok=True)
+        os.chmod(site_path, 0o777)  # Full read/write/execute for all
         return site_path
-
 
 
     name = sanitize_name(name)
@@ -195,9 +195,13 @@ def create_site(name: str):
                 **traefik_labels(name),
                 "1clickwp.site_name": name
             },
-            volumes=[(site_path +'/', '/bitnami/wordpress')],
+            volumes=[(site_path +'/', '/bitnami/wordpress'),
+                     ('./deps/scripts/wp-init.sh', '/docker-entrypoint-init.d/wp-init.sh'),
+                     ('./deps/mu-plugins','/tmp/mu-plugins'),
+                     ],
             detach=True
         )
+
     except docker_errors.APIError as e:
         raise HTTPException(status_code=500, detail=f"Container start failed: {e.explanation}")
 
