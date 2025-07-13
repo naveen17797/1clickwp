@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1ClickWP Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/forms@0.5.4/dist/forms.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen font-sans p-6">
+
+  <div class="max-w-3xl mx-auto space-y-8">
+    <h1 class="text-3xl font-bold text-center text-teal-400">1ClickWP Site Manager</h1>
+
+    <!-- Create Site -->
+    <form id="createForm" class="bg-gray-800 p-4 rounded-xl shadow space-y-4">
+      <label class="block">
+        <span class="text-sm text-gray-400">Site Name</span>
+        <input type="text" id="siteName" required placeholder="my-awesome-site"
+          class="mt-1 w-full bg-gray-700 text-white border-none rounded px-3 py-2" />
+      </label>
+      <button type="submit"
+        class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded transition">
+        Create WordPress Site
+      </button>
+    </form>
+
+    <!-- Site List -->
+    <div class="bg-gray-800 p-4 rounded-xl shadow">
+      <h2 class="text-xl font-semibold mb-3">Running Sites</h2>
+      <ul id="siteList" class="space-y-4">
+        <!-- JS will populate this -->
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    async function loadSites() {
+      const res = await fetch('/sites');
+      const sites = await res.json();
+      const list = document.getElementById('siteList');
+      list.innerHTML = '';
+
+      if (sites.length === 0) {
+        list.innerHTML = `<p class="text-gray-400">No WordPress sites running.</p>`;
+        return;
+      }
+
+      for (const site of sites) {
+        const li = document.createElement('li');
+        li.className = 'bg-gray-700 p-3 rounded flex justify-between items-center';
+        li.innerHTML = `
+          <div>
+            <p class="font-medium">${site.name}</p>
+            <a href="https://${site.domain}" target="_blank" class="text-teal-400 text-sm hover:underline">${site.domain}</a>
+          </div>
+          <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                  onclick="deleteSite('${site.name}')">Delete</button>
+        `;
+        list.appendChild(li);
+      }
+    }
+
+    async function createSite(e) {
+      e.preventDefault();
+      const name = document.getElementById('siteName').value.trim();
+      if (!name) return;
+      const res = await fetch(`/sites?name=${encodeURIComponent(name)}`, { method: 'POST' });
+      if (res.ok) {
+        document.getElementById('siteName').value = '';
+        await loadSites();
+      } else {
+        const err = await res.json();
+        alert(`Error: ${err.detail}`);
+      }
+    }
+
+    async function deleteSite(name) {
+      if (!confirm(`Delete site ${name}?`)) return;
+      const res = await fetch(`/sites/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      if (res.ok) {
+        await loadSites();
+      } else {
+        alert("Failed to delete site");
+      }
+    }
+
+    document.getElementById('createForm').addEventListener('submit', createSite);
+    loadSites();
+  </script>
+</body>
+</html>

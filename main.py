@@ -1,24 +1,202 @@
-# What it does?
-# Instantly starts up WordPress instances with single click.
-# Allow user to create wordpress sites.
-# Allow user to assign a domain name to it.
-# Allow user to edit the WordPress files.
-# Allow user to autologin.
-# Allow user to view logs.
-# Allow user to explore database.
+from hashlib import md5
+from pathlib import Path
 
-
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from python_on_whales import docker
+from docker import errors as docker_errors
 
 from core import Core
 
 app = FastAPI()
 core = Core()
-core.down()
-core.up()
-core.status()
 
+TRAEFIK_CERT_RESOLVER = "myresolver"
+TRAEFIK_ENTRYPOINT_WEB = "web"
+TRAEFIK_ENTRYPOINT_WEBSECURE = "websecure"
+DB_CONTAINER_NAME = "1clickwp_db"
+DOCKER_NETWORK = "1clickwp"
+SITE_PREFIX = "1clickwp_"
+
+
+# -----------------------------
+# Utility Functions
+# -----------------------------
+
+def generate_site_id(name: str) -> str:
+    return md5(name.encode()).hexdigest()[:10]
+
+
+def sanitize_name(name: str) -> str:
+    return name.strip().replace("-", "_").replace(".", "_")
+
+
+def get_container_name(site_id: str) -> str:
+    return f"{SITE_PREFIX}{site_id}"
+
+
+def site_exists(site_id: str) -> bool:
+    return any(
+        container.name.startswith(get_container_name(site_id))
+        for container in docker.container.list(all=True)
+    )
+
+
+def create_mysql_database(db_name: str):
+    try:
+        docker.container.execute(
+            container=DB_CONTAINER_NAME,
+            command=[
+                'mysql',
+                '-uroot',
+                '-plocal',
+                '-e',
+                f"CREATE DATABASE IF NOT EXISTS `{db_name}`;"
+            ]
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL error: {str(e)}")
+
+
+def traefik_labels(site_name: str, container_port: int = 8080) -> dict:
+    domain = f"{site_name}.localhost"
+    router = f"{site_name}-router"
+    middleware = f"{site_name}-headers"
+
+    return {
+        "traefik.enable": "true",
+        f"traefik.http.routers.{router}.rule": f"Host(`{domain}`)",
+        f"traefik.http.routers.{router}.entrypoints": TRAEFIK_ENTRYPOINT_WEBSECURE,
+        f"traefik.http.routers.{router}.tls": "true",
+        f"traefik.http.routers.{router}.tls.certresolver": TRAEFIK_CERT_RESOLVER,
+        f"traefik.http.routers.{router}.middlewares": middleware,
+        f"traefik.http.services.{router}.loadbalancer.server.port": str(container_port),
+
+        # HTTP → HTTPS Redirect
+        f"traefik.http.routers.{router}-http.rule": f"Host(`{domain}`)",
+        f"traefik.http.routers.{router}-http.entrypoints": TRAEFIK_ENTRYPOINT_WEB,
+        f"traefik.http.routers.{router}-http.middlewares": "redirect-to-https",
+        f"traefik.http.routers.{router}-http.service": "noop@internal",
+        "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme": "https",
+
+        # Secure Headers
+        f"traefik.http.middlewares.{middleware}.headers.SSLRedirect": "true",
+        f"traefik.http.middlewares.{middleware}.headers.STSSeconds": "31536000",
+        f"traefik.http.middlewares.{middleware}.headers.SSLHost": domain,
+        f"traefik.http.middlewares.{middleware}.headers.STSIncludeSubdomains": "true",
+        f"traefik.http.middlewares.{middleware}.headers.STSPreload": "true",
+        f"traefik.http.middlewares.{middleware}.headers.frameDeny": "true",
+        f"traefik.http.middlewares.{middleware}.headers.customResponseHeaders.X-Frame-Options": "SAMEORIGIN",
+        f"traefik.http.middlewares.{middleware}.headers.contentTypeNosniff": "true",
+        f"traefik.http.middlewares.{middleware}.headers.browserXSSFilter": "true",
+    }
+
+
+def delete_all_1clickwp_containers() -> list:
+    deleted = []
+    for container in docker.container.list(all=True):
+        if container.name.startswith(SITE_PREFIX):
+            try:
+                docker.container.remove(container.name, force=True)
+                deleted.append(container.name)
+            except Exception as e:
+                print(e)
+    return deleted
+
+
+# -----------------------------
+# FastAPI Lifecycle
+# -----------------------------
+
+@app.on_event("startup")
+def startup():
+    core.up()
+    core.status()
+
+
+@app.on_event("shutdown")
+def shutdown():
+    print("🧹 Cleaning up 1clickwp containers...")
+    removed = delete_all_1clickwp_containers()
+    core.down()
+    print(f"✅ Removed: {removed}")
+
+
+# -----------------------------
+# API Routes
+# -----------------------------
 
 @app.get("/sites")
-async def root():
-    return {"message": "Hello World"}
+def list_sites():
+    containers = docker.container.list(all=True)
+    result = []
+
+    for c in containers:
+        if c.name.startswith(SITE_PREFIX):
+            site_id = c.name.replace(SITE_PREFIX, "")
+            domain = f"{site_id}.localhost"
+            result.append({
+                "name": site_id,
+                "domain": domain,
+                "container": c.name
+            })
+
+    return result
+
+
+@app.post("/sites")
+def create_site(name: str):
+    name = sanitize_name(name)
+    site_id = generate_site_id(name)
+    container_name = get_container_name(site_id)
+
+    if site_exists(site_id):
+        raise HTTPException(status_code=400, detail="Site already exists")
+
+    create_mysql_database(container_name)
+
+    try:
+        docker.container.run(
+            image="bitnami/wordpress:latest",
+            name=container_name,
+            networks=[DOCKER_NETWORK],
+            envs={
+                "WORDPRESS_DATABASE_HOST": DB_CONTAINER_NAME,
+                "WORDPRESS_DATABASE_NAME": container_name,
+                "WORDPRESS_DATABASE_USER": "root",
+                "WORDPRESS_DATABASE_PASSWORD": "local",
+                "WORDPRESS_USERNAME": "admin",
+                "WORDPRESS_PASSWORD": "password",
+            },
+            labels=traefik_labels(name),
+            detach=True
+        )
+    except docker_errors.APIError as e:
+        raise HTTPException(status_code=500, detail=f"Container start failed: {e.explanation}")
+
+    return {
+        "message": f"Site created at https://{name}.localhost",
+        "container": container_name
+    }
+
+
+@app.delete("/sites/{name}")
+def delete_site(name: str):
+    site_id = generate_site_id(sanitize_name(name))
+    container_name = get_container_name(site_id)
+
+    try:
+        docker.container.remove(container_name, force=True)
+        return {"message": f"Site '{name}' deleted"}
+    except docker_errors.NotFound:
+        raise HTTPException(status_code=404, detail="Site not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+# Mount static folder
+static_path = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+@app.get("/")
+def serve_index():
+    return FileResponse(static_path / "index.html")
