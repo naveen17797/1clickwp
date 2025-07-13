@@ -1,3 +1,5 @@
+import os
+import re
 from hashlib import md5
 from pathlib import Path
 
@@ -28,7 +30,8 @@ def generate_site_id(name: str) -> str:
     return md5(name.encode()).hexdigest()[:10]
 
 def sanitize_name(name: str) -> str:
-    return name.strip().replace("-", "_").replace(".", "_")
+    # Keep only letters and hyphens
+    return re.sub(r'[^a-zA-Z\-]', '', name)
 
 def get_container_name(site_id: str) -> str:
     return f"{WORDPRESS_CONTAINER_PREFIX}{site_id}"
@@ -157,15 +160,24 @@ def list_sites():
 
 @app.post("/sites")
 def create_site(name: str):
+
+    def prepare_site_dir(container_name: str) -> str:
+
+        os.makedirs(site_path, exist_ok=True)
+        return site_path
+
+
+
     name = sanitize_name(name)
     site_id = generate_site_id(name)
     container_name = get_container_name(site_id)
+    site_path = os.path.join( "./sites", name)
 
     if site_exists(site_id):
         raise HTTPException(status_code=400, detail="Site already exists")
 
     create_mysql_database(container_name)
-
+    prepare_site_dir(name)
     try:
         docker.container.run(
             image="bitnami/wordpress:latest",
@@ -183,7 +195,7 @@ def create_site(name: str):
                 **traefik_labels(name),
                 "1clickwp.site_name": name
             },
-
+            volumes=[(site_path +'/', '/bitnami/wordpress')],
             detach=True
         )
     except docker_errors.APIError as e:
