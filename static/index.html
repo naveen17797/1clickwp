@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>1ClickWP - Bird Edition</title>
+  <title>1ClickWP - Site Manager</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -15,67 +15,69 @@
             bunker: {
               bg: '#0e0e0e',
               panel: '#1a1a1a',
-              border: '#2d2d2d',
-              text: '#c2f5c2',
-              link: '#6fff6f',
-              red: '#ff5555'
+              border: '#2e2e2e',
+              text: '#e0ffe0',
+              link: '#5dff8d',
+              red: '#ff5555',
+              hover: '#92ffb5',
+              grayish: '#a1a1a1'
             }
           },
           fontFamily: {
-            mono: ['Courier New', 'monospace']
+            mono: ['"Fira Code"', 'Courier New', 'monospace']
+          },
+          transitionProperty: {
+            layout: 'background-color, color, border-color, transform, box-shadow'
           }
         }
       }
     };
   </script>
+  <style>
+    * {
+      transition: all 0.2s ease-in-out;
+    }
+  </style>
 </head>
 
-<body class="bg-bunker-bg text-bunker-text font-mono min-h-screen flex items-center justify-center overflow-hidden">
-  <!-- Centered Panel -->
-  <div class="w-full max-w-2xl bg-bunker-panel p-6 rounded-xl border border-bunker-border shadow-xl space-y-6">
-    <h1 class="text-2xl font-bold border-b border-bunker-border pb-2 text-center">1ClickWP Control</h1>
+<body class="bg-bunker-bg text-bunker-text font-mono min-h-screen flex items-center justify-center overflow-hidden px-6 py-10">
+  <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 bg-bunker-panel p-8 rounded-2xl border border-bunker-border shadow-2xl">
 
-    <!-- Create Site -->
-    <form id="createForm" class="space-y-3">
-      <label class="block text-sm">
-        Site Name (no spaces)
-        <input type="text" id="siteName" required placeholder="my-site"
-          class="mt-1 w-full bg-bunker-bg text-white border border-bunker-border px-2 py-1 text-sm rounded" />
-      </label>
-      <button type="submit"
-        class="bg-bunker-link text-black text-sm px-3 py-1 rounded hover:bg-green-400 transition">
-        Deploy Site
-      </button>
-    </form>
+    <!-- Left: Site Creator -->
+    <div class="space-y-6 pr-4 md:pr-8 border-b md:border-b-0 md:border-r border-bunker-border">
+      <h1 class="text-2xl font-bold border-b border-bunker-border pb-2">Create New WordPress Site</h1>
+      <form id="createForm" class="space-y-4">
+        <label class="block text-sm font-semibold">
+          Site Name <span class="text-gray-500">(no spaces)</span>
+          <input type="text" id="siteName" value="my-first-site" autofocus required placeholder="my-wp-site"
+            class="mt-2 w-full bg-bunker-bg text-white border border-bunker-border px-3 py-2 text-sm rounded focus:outline-none focus:ring-2 focus:ring-bunker-link"/>
+        </label>
+        <button type="submit"
+          class="bg-bunker-link text-black font-bold text-sm px-4 py-2 rounded-md hover:bg-bunker-hover transition-layout w-full">
+          Create Site
+        </button>
+      </form>
 
-    <!-- Site List -->
-    <div>
-      <h2 class="text-lg font-semibold mb-2 border-b border-bunker-border pb-1">&gt; Active Sites</h2>
-      <ul id="siteList" class="space-y-3"></ul>
+      <div class="text-xs text-bunker-grayish space-y-2 pt-4 border-t border-bunker-border">
+        <p class="text-bunker-link font-semibold uppercase pt-2">About</p>
+        <ul class="list-disc pl-5">
+          <li>Instant WordPress environments for local or dev use</li>
+          <li>No accounts or telemetry</li>
+          <li>Uses Docker, Traefik, and simple shell scripts</li>
+        </ul>
+        <p class="pt-3">
+          <a href="https://www.buymeacoffee.com/YOUR_HANDLE" target="_blank" class="text-bunker-link underline hover:text-bunker-hover">
+            Support development
+          </a>
+        </p>
+      </div>
     </div>
 
-    <!-- About -->
-    <div class="mt-6 text-xs space-y-2 border-t border-bunker-border pt-3">
-      <p class="text-bunker-link font-semibold">about this cursed project</p>
-      <ul class="list-disc pl-5 text-bunker-text space-y-1">
-        <li>Single-click WordPress site launcher</li>
-        <li>Open source, no SaaS chains</li>
-        <li>Built with Docker, Traefik, and dark magic</li>
-        <li>Made by a broke dev for other broke devs</li>
-      </ul>
-      <p class="pt-2 text-bunker-link">
-        <a href="https://www.buymeacoffee.com/YOUR_HANDLE" target="_blank" class="underline">☕ Go Pro</a> — support the project and remove distractions.
-      </p>
+    <!-- Right: Active Sites -->
+    <div class="space-y-4 pl-4 md:pl-8">
+      <h2 class="text-xl font-bold border-b border-bunker-border pb-2">Active Sites</h2>
+      <ul id="siteList" class="space-y-3 text-sm"></ul>
     </div>
-  </div>
-
-  <!-- Bigger Bird GIF (Bottom Right Corner) -->
-  <div class="fixed bottom-4 right-4 z-50 w-64 opacity-95">
-    <div class="tenor-gif-embed" data-postid="3859170581754142147" data-share-method="host" data-aspect-ratio="1.76596" data-width="100%">
-      <a href="https://tenor.com/view/bird-mourning-dove-dove-peck-mlem-gif-3859170581754142147">Bird GIF</a> from
-      <a href="https://tenor.com/search/bird-gifs">Bird GIFs</a>
-    </div>
-    <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
   </div>
 
   <!-- JS Logic -->
@@ -87,21 +89,25 @@
       list.innerHTML = '';
 
       if (!sites.length) {
-        list.innerHTML = `<p class="text-sm opacity-50">&gt; no sites deployed</p>`;
+        list.innerHTML = `<p class="text-sm text-gray-500 italic">No active sites found.</p>`;
         return;
       }
 
       for (const site of sites) {
         const li = document.createElement('li');
-        li.className = 'bg-bunker-bg border border-bunker-border p-2 rounded text-sm flex justify-between items-center';
+        li.className = 'bg-bunker-bg border border-bunker-border p-3 rounded-lg flex justify-between items-center hover:border-bunker-link transition-layout';
+
         li.innerHTML = `
           <div>
-            <a href="https://${site.domain}" target="_blank" class="font-bold hover:underline text-bunker-link">&gt; ${site.name}</a>
-            <p class="text-xs text-gray-400">${site.domain}</p>
+            <a href="https://${site.domain}" target="_blank" class="font-semibold hover:underline text-bunker-link">${site.name}</a>
+            <p class="text-xs text-gray-500">${site.domain}</p>
           </div>
-          <button class="bg-bunker-red text-white px-2 py-1 text-xs rounded hover:bg-red-700"
-                  onclick="deleteSite('${site.name}')">Nuke</button>
+          <button class="bg-bunker-red text-white px-3 py-1 rounded-md text-xs hover:bg-red-600 transition">
+            Delete
+          </button>
         `;
+
+        li.querySelector('button').onclick = () => deleteSite(site.name);
         list.appendChild(li);
       }
     }
@@ -110,23 +116,24 @@
       e.preventDefault();
       const name = document.getElementById('siteName').value.trim();
       if (!name) return;
+
       const res = await fetch(`/sites?name=${encodeURIComponent(name)}`, { method: 'POST' });
       if (res.ok) {
         document.getElementById('siteName').value = '';
         await loadSites();
       } else {
         const err = await res.json();
-        alert(`> Error: ${err.detail}`);
+        alert(`Error: ${err.detail || 'Failed to create site.'}`);
       }
     }
 
     async function deleteSite(name) {
-      if (!confirm(`Nuke this site: ${name}?`)) return;
+      if (!confirm(`Delete "${name}"? This action cannot be undone.`)) return;
       const res = await fetch(`/sites/${encodeURIComponent(name)}`, { method: 'DELETE' });
       if (res.ok) {
         await loadSites();
       } else {
-        alert("> Failed to delete. It lives.");
+        alert("Failed to delete site.");
       }
     }
 

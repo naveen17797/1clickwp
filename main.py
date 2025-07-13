@@ -55,7 +55,7 @@ def create_mysql_database(db_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MySQL error: {str(e)}")
 
-def traefik_labels(site_name: str, container_port: int = 80) -> dict:
+def traefik_labels(site_name: str, container_port: int = 8080) -> dict:
     domain = f"{site_name}.localhost"
     router = f"{site_name}-router"
     middleware = f"{site_name}-headers"
@@ -88,16 +88,28 @@ def traefik_labels(site_name: str, container_port: int = 80) -> dict:
         f"traefik.http.middlewares.{middleware}.headers.browserXSSFilter": "true",
     }
 
-def delete_all_1clickwp_containers() -> list:
-    deleted = []
+def stop_all_1clickwp_containers() -> list:
+    stopped = []
+    for container in docker.container.list():
+        if container.name.startswith(WORDPRESS_CONTAINER_PREFIX):
+            try:
+                docker.container.stop(container.name)
+                stopped.append(container.name)
+            except Exception as e:
+                print(f"Error stopping {container.name}: {e}")
+    return stopped
+
+def start_all_1clickwp_containers() -> list:
+    started = []
     for container in docker.container.list(all=True):
         if container.name.startswith(WORDPRESS_CONTAINER_PREFIX):
             try:
-                docker.container.remove(container.name, force=True)
-                deleted.append(container.name)
+                docker.container.start(container.name)
+                started.append(container.name)
             except Exception as e:
-                print(e)
-    return deleted
+                print(f"Error starting {container.name}: {e}")
+    return started
+
 
 
 # -----------------------------
@@ -106,15 +118,18 @@ def delete_all_1clickwp_containers() -> list:
 
 @app.on_event("startup")
 def startup():
+    print("🚀 Starting 1clickwp containers...")
+    started = start_all_1clickwp_containers()
+    print(f"✅ Started: {started}")
     core.up()
     core.status()
 
 @app.on_event("shutdown")
 def shutdown():
-    print("🩹 Cleaning up 1clickwp containers...")
-    removed = delete_all_1clickwp_containers()
+    print("🛑 Stopping 1clickwp containers...")
+    stopped = stop_all_1clickwp_containers()
+    print(f"✅ Stopped: {stopped}")
     core.down()
-    print(f"✅ Removed: {removed}")
 
 
 # -----------------------------
@@ -153,7 +168,7 @@ def create_site(name: str):
 
     try:
         docker.container.run(
-            image="wordpress:latest",
+            image="bitnami/wordpress:latest",
             name=container_name,
             networks=[DOCKER_NETWORK],
             envs={
