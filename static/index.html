@@ -1,44 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1ClickWP Manager</title>
-  <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/forms@0.5.4/dist/forms.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>1ClickWP - Bird Edition</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
-    }
+      theme: {
+        extend: {
+          colors: {
+            bunker: {
+              bg: '#0e0e0e',
+              panel: '#1a1a1a',
+              border: '#2d2d2d',
+              text: '#c2f5c2',
+              link: '#6fff6f',
+              red: '#ff5555'
+            }
+          },
+          fontFamily: {
+            mono: ['Courier New', 'monospace']
+          }
+        }
+      }
+    };
   </script>
 </head>
-<body class="bg-gray-900 text-gray-200 min-h-screen font-sans p-6">
 
-  <div class="max-w-3xl mx-auto space-y-8">
-    <h1 class="text-3xl font-bold text-center text-teal-400">1ClickWP Site Manager</h1>
+<body class="bg-bunker-bg text-bunker-text font-mono min-h-screen flex items-center justify-center overflow-hidden">
+  <!-- Centered Panel -->
+  <div class="w-full max-w-2xl bg-bunker-panel p-6 rounded-xl border border-bunker-border shadow-xl space-y-6">
+    <h1 class="text-2xl font-bold border-b border-bunker-border pb-2 text-center">1ClickWP Control</h1>
 
     <!-- Create Site -->
-    <form id="createForm" class="bg-gray-800 p-4 rounded-xl shadow space-y-4">
-      <label class="block">
-        <span class="text-sm text-gray-400">Site Name</span>
-        <input type="text" id="siteName" required placeholder="my-awesome-site"
-          class="mt-1 w-full bg-gray-700 text-white border-none rounded px-3 py-2" />
+    <form id="createForm" class="space-y-3">
+      <label class="block text-sm">
+        Site Name (no spaces)
+        <input type="text" id="siteName" required placeholder="my-site"
+          class="mt-1 w-full bg-bunker-bg text-white border border-bunker-border px-2 py-1 text-sm rounded" />
       </label>
       <button type="submit"
-        class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded transition">
-        Create WordPress Site
+        class="bg-bunker-link text-black text-sm px-3 py-1 rounded hover:bg-green-400 transition">
+        Deploy Site
       </button>
     </form>
 
     <!-- Site List -->
-    <div class="bg-gray-800 p-4 rounded-xl shadow">
-      <h2 class="text-xl font-semibold mb-3">Running Sites</h2>
-      <ul id="siteList" class="space-y-4">
-        <!-- JS will populate this -->
+    <div>
+      <h2 class="text-lg font-semibold mb-2 border-b border-bunker-border pb-1">&gt; Active Sites</h2>
+      <ul id="siteList" class="space-y-3"></ul>
+    </div>
+
+    <!-- About -->
+    <div class="mt-6 text-xs space-y-2 border-t border-bunker-border pt-3">
+      <p class="text-bunker-link font-semibold">about this cursed project</p>
+      <ul class="list-disc pl-5 text-bunker-text space-y-1">
+        <li>Single-click WordPress site launcher</li>
+        <li>Open source, no SaaS chains</li>
+        <li>Built with Docker, Traefik, and dark magic</li>
+        <li>Made by a broke dev for other broke devs</li>
       </ul>
+      <p class="pt-2 text-bunker-link">
+        <a href="https://www.buymeacoffee.com/YOUR_HANDLE" target="_blank" class="underline">☕ Go Pro</a> — support the project and remove distractions.
+      </p>
     </div>
   </div>
 
+  <!-- Bigger Bird GIF (Bottom Right Corner) -->
+  <div class="fixed bottom-4 right-4 z-50 w-64 opacity-95">
+    <div class="tenor-gif-embed" data-postid="3859170581754142147" data-share-method="host" data-aspect-ratio="1.76596" data-width="100%">
+      <a href="https://tenor.com/view/bird-mourning-dove-dove-peck-mlem-gif-3859170581754142147">Bird GIF</a> from
+      <a href="https://tenor.com/search/bird-gifs">Bird GIFs</a>
+    </div>
+    <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
+  </div>
+
+  <!-- JS Logic -->
   <script>
     async function loadSites() {
       const res = await fetch('/sites');
@@ -46,21 +86,21 @@
       const list = document.getElementById('siteList');
       list.innerHTML = '';
 
-      if (sites.length === 0) {
-        list.innerHTML = `<p class="text-gray-400">No WordPress sites running.</p>`;
+      if (!sites.length) {
+        list.innerHTML = `<p class="text-sm opacity-50">&gt; no sites deployed</p>`;
         return;
       }
 
       for (const site of sites) {
         const li = document.createElement('li');
-        li.className = 'bg-gray-700 p-3 rounded flex justify-between items-center';
+        li.className = 'bg-bunker-bg border border-bunker-border p-2 rounded text-sm flex justify-between items-center';
         li.innerHTML = `
           <div>
-            <p class="font-medium">${site.name}</p>
-            <a href="https://${site.domain}" target="_blank" class="text-teal-400 text-sm hover:underline">${site.domain}</a>
+            <a href="https://${site.domain}" target="_blank" class="font-bold hover:underline text-bunker-link">&gt; ${site.name}</a>
+            <p class="text-xs text-gray-400">${site.domain}</p>
           </div>
-          <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                  onclick="deleteSite('${site.name}')">Delete</button>
+          <button class="bg-bunker-red text-white px-2 py-1 text-xs rounded hover:bg-red-700"
+                  onclick="deleteSite('${site.name}')">Nuke</button>
         `;
         list.appendChild(li);
       }
@@ -76,17 +116,17 @@
         await loadSites();
       } else {
         const err = await res.json();
-        alert(`Error: ${err.detail}`);
+        alert(`> Error: ${err.detail}`);
       }
     }
 
     async function deleteSite(name) {
-      if (!confirm(`Delete site ${name}?`)) return;
+      if (!confirm(`Nuke this site: ${name}?`)) return;
       const res = await fetch(`/sites/${encodeURIComponent(name)}`, { method: 'DELETE' });
       if (res.ok) {
         await loadSites();
       } else {
-        alert("Failed to delete site");
+        alert("> Failed to delete. It lives.");
       }
     }
 

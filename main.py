@@ -2,7 +2,8 @@ from hashlib import md5
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from python_on_whales import docker
 from docker import errors as docker_errors
 
@@ -16,7 +17,7 @@ TRAEFIK_ENTRYPOINT_WEB = "web"
 TRAEFIK_ENTRYPOINT_WEBSECURE = "websecure"
 DB_CONTAINER_NAME = "1clickwp_db"
 DOCKER_NETWORK = "1clickwp"
-SITE_PREFIX = "1clickwp_"
+WORDPRESS_CONTAINER_PREFIX = "1clickwp_wordpress_"
 
 
 # -----------------------------
@@ -26,21 +27,18 @@ SITE_PREFIX = "1clickwp_"
 def generate_site_id(name: str) -> str:
     return md5(name.encode()).hexdigest()[:10]
 
-
 def sanitize_name(name: str) -> str:
     return name.strip().replace("-", "_").replace(".", "_")
 
-
 def get_container_name(site_id: str) -> str:
-    return f"{SITE_PREFIX}{site_id}"
-
+    return f"{WORDPRESS_CONTAINER_PREFIX}{site_id}"
 
 def site_exists(site_id: str) -> bool:
+    expected_name = get_container_name(site_id)
     return any(
-        container.name.startswith(get_container_name(site_id))
+        container.name == expected_name
         for container in docker.container.list(all=True)
     )
-
 
 def create_mysql_database(db_name: str):
     try:
@@ -57,8 +55,7 @@ def create_mysql_database(db_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MySQL error: {str(e)}")
 
-
-def traefik_labels(site_name: str, container_port: int = 8080) -> dict:
+def traefik_labels(site_name: str, container_port: int = 80) -> dict:
     domain = f"{site_name}.localhost"
     router = f"{site_name}-router"
     middleware = f"{site_name}-headers"
@@ -91,11 +88,10 @@ def traefik_labels(site_name: str, container_port: int = 8080) -> dict:
         f"traefik.http.middlewares.{middleware}.headers.browserXSSFilter": "true",
     }
 
-
 def delete_all_1clickwp_containers() -> list:
     deleted = []
     for container in docker.container.list(all=True):
-        if container.name.startswith(SITE_PREFIX):
+        if container.name.startswith(WORDPRESS_CONTAINER_PREFIX):
             try:
                 docker.container.remove(container.name, force=True)
                 deleted.append(container.name)
@@ -113,10 +109,9 @@ def startup():
     core.up()
     core.status()
 
-
 @app.on_event("shutdown")
 def shutdown():
-    print("🧹 Cleaning up 1clickwp containers...")
+    print("🩹 Cleaning up 1clickwp containers...")
     removed = delete_all_1clickwp_containers()
     core.down()
     print(f"✅ Removed: {removed}")
@@ -132,11 +127,12 @@ def list_sites():
     result = []
 
     for c in containers:
-        if c.name.startswith(SITE_PREFIX):
-            site_id = c.name.replace(SITE_PREFIX, "")
-            domain = f"{site_id}.localhost"
+        if c.name.startswith(WORDPRESS_CONTAINER_PREFIX):
+            site_id = c.name.replace(WORDPRESS_CONTAINER_PREFIX, "")
+            site_name = c.config.labels.get('1clickwp.site_name', site_id)
+            domain = f"{site_name}.localhost"
             result.append({
-                "name": site_id,
+                "name": site_name,
                 "domain": domain,
                 "container": c.name
             })
@@ -157,7 +153,7 @@ def create_site(name: str):
 
     try:
         docker.container.run(
-            image="bitnami/wordpress:latest",
+            image="wordpress:latest",
             name=container_name,
             networks=[DOCKER_NETWORK],
             envs={
@@ -168,7 +164,11 @@ def create_site(name: str):
                 "WORDPRESS_USERNAME": "admin",
                 "WORDPRESS_PASSWORD": "password",
             },
-            labels=traefik_labels(name),
+            labels={
+                **traefik_labels(name),
+                "1clickwp.site_name": name
+            },
+
             detach=True
         )
     except docker_errors.APIError as e:
@@ -178,7 +178,6 @@ def create_site(name: str):
         "message": f"Site created at https://{name}.localhost",
         "container": container_name
     }
-
 
 @app.delete("/sites/{name}")
 def delete_site(name: str):
@@ -192,11 +191,15 @@ def delete_site(name: str):
         raise HTTPException(status_code=404, detail="Site not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-# Mount static folder
+
+
+# -----------------------------
+# Static File Hosting
+# -----------------------------
+
 static_path = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=static_path), name="static")
+
 @app.get("/")
 def serve_index():
     return FileResponse(static_path / "index.html")
