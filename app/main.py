@@ -1,17 +1,15 @@
 import base64
 import os
 import re
-import shutil
-from hashlib import md5
 from pathlib import Path
 
+from docker import errors as docker_errors
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from python_on_whales import docker
-from docker import errors as docker_errors
 
-from core import Core
+from app.core import Core
 
 app = FastAPI()
 core = Core()
