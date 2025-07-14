@@ -10,9 +10,12 @@ from fastapi.staticfiles import StaticFiles
 from python_on_whales import docker
 
 from app.core import Core
+from app.database import Database
+from app.lifespan import lifespan
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 core = Core()
+database = Database()
 
 TRAEFIK_CERT_RESOLVER = "myresolver"
 TRAEFIK_ENTRYPOINT_WEB = "web"
@@ -44,20 +47,7 @@ def site_exists(site_id: str) -> bool:
         for container in docker.container.list(all=True)
     )
 
-def create_mysql_database(db_name: str):
-    try:
-        docker.container.execute(
-            container=DB_CONTAINER_NAME,
-            command=[
-                'mysql',
-                '-uroot',
-                '-plocal',
-                '-e',
-                f"CREATE DATABASE IF NOT EXISTS `{db_name}`;"
-            ]
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"MySQL error: {str(e)}")
+
 
 def traefik_labels(site_name: str, container_port: int = 8080) -> dict:
     domain = f"{site_name}.localhost"
@@ -116,24 +106,7 @@ def start_all_1clickwp_containers() -> list:
 
 
 
-# -----------------------------
-# FastAPI Lifecycle
-# -----------------------------
 
-@app.on_event("startup")
-def startup():
-    print("🚀 Starting 1clickwp containers...")
-    started = start_all_1clickwp_containers()
-    print(f"✅ Started: {started}")
-    core.up()
-    core.status()
-
-@app.on_event("shutdown")
-def shutdown():
-    print("🛑 Stopping 1clickwp containers...")
-    stopped = stop_all_1clickwp_containers()
-    print(f"✅ Stopped: {stopped}")
-    core.down()
 
 
 # -----------------------------
@@ -176,7 +149,7 @@ def create_site(name: str):
     if site_exists(site_id):
         raise HTTPException(status_code=400, detail="Site already exists")
 
-    create_mysql_database(container_name)
+    database.create(container_name)
     prepare_site_dir(name)
     try:
         docker.container.run(
