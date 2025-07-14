@@ -32,4 +32,4 @@ class Database:
                 ]
             )
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"MySQL error: {str(e)}")
+            raise HTTPException(e)

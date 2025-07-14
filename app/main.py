@@ -132,26 +132,36 @@ def list_sites():
     return result
 
 
+# Get base directory (directory of this current script)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 @app.post("/sites")
 def create_site(name: str):
     def prepare_site_dir(container_name: str) -> str:
-        site_path = f"./sites/{container_name}"  # Adjust this base path as needed
+        site_path = os.path.join(BASE_DIR, "sites", container_name)
         os.makedirs(site_path, exist_ok=True)
         os.chmod(site_path, 0o777)  # Full read/write/execute for all
         return site_path
 
-
     name = sanitize_name(name)
     site_id = generate_site_id(name)
     container_name = get_container_name(site_id)
-    site_path = os.path.join( "./sites", name)
 
     if site_exists(site_id):
         raise HTTPException(status_code=400, detail="Site already exists")
 
+    site_path = prepare_site_dir(name)
+
+    # Create the DB for the site
     database.create(container_name)
-    prepare_site_dir(name)
+
     try:
+        volumes = [
+            (site_path, '/bitnami/wordpress'),
+            (os.path.join(BASE_DIR, 'deps', 'scripts', 'wp-init.sh'), '/docker-entrypoint-init.d/wp-init.sh'),
+            (os.path.join(BASE_DIR, 'deps', 'mu-plugins'), '/tmp/mu-plugins'),
+        ]
+        print(volumes)
         docker.container.run(
             image="bitnami/wordpress:latest",
             name=container_name,
@@ -168,10 +178,7 @@ def create_site(name: str):
                 **traefik_labels(name),
                 "1clickwp.site_name": name
             },
-            volumes=[(site_path +'/', '/bitnami/wordpress'),
-                     ('./deps/scripts/wp-init.sh', '/docker-entrypoint-init.d/wp-init.sh'),
-                     ('./deps/mu-plugins','/tmp/mu-plugins'),
-                     ],
+            volumes=volumes,
             detach=True
         )
 
