@@ -194,7 +194,7 @@ def create_site(name: str):
 def delete_site(name: str):
     site_id = generate_site_id(sanitize_name(name))
     container_name = get_container_name(site_id)
-
+    database.delete(container_name)
     try:
         docker.container.remove(container_name, force=True)
         return {"message": f"Site '{name}' deleted"}
