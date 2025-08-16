@@ -1,0 +1,94 @@
+
+
+services:
+  proxy:
+    networks:
+      - 1clickwp
+    image: traefik:v3.0
+    container_name: 1clickwp_proxy
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--api.insecure=true"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=your-email@example.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+
+    restart: always
+
+  db:
+    networks:
+      - 1clickwp
+    image: bitnami/mysql:8.0
+    container_name: 1clickwp_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: local
+    volumes:
+      - db_data:/bitnami/mysql
+      - ./initdb:/docker-entrypoint-initdb.d
+    labels:
+      - "traefik.enable=false"
+
+  phpmyadmin:
+    networks:
+      - 1clickwp
+    image: bitnami/phpmyadmin:5.2.2
+    container_name: 1clickwp_phpmyadmin
+    restart: always
+    environment:
+      DATABASE_HOST: db
+      DATABASE_USER: root
+      DATABASE_PASSWORD: local
+
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pma.rule=Host(`pma.localhost`)"
+      - "traefik.http.routers.pma.entrypoints=websecure"
+      - "traefik.http.routers.pma.tls=true"
+      - "traefik.http.routers.pma.tls.certresolver=myresolver"
+      - "traefik.http.routers.pma.middlewares=pma-headers"
+      - "traefik.http.services.pma.loadbalancer.server.port=8080"
+
+      # Optional HTTP redirect to HTTPS
+      - "traefik.http.routers.pma-http.rule=Host(`pma.localhost`)"
+      - "traefik.http.routers.pma-http.entrypoints=web"
+      - "traefik.http.routers.pma-http.middlewares=redirect-to-https"
+      - "traefik.http.routers.pma-http.service=noop@internal"
+
+      # Security headers
+      - "traefik.http.middlewares.pma-headers.headers.SSLRedirect=true"
+      - "traefik.http.middlewares.pma-headers.headers.STSSeconds=31536000"
+      - "traefik.http.middlewares.pma-headers.headers.SSLHost=pma.localhost"
+      - "traefik.http.middlewares.pma-headers.headers.STSIncludeSubdomains=true"
+      - "traefik.http.middlewares.pma-headers.headers.STSPreload=true"
+      - "traefik.http.middlewares.pma-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.pma-headers.headers.customResponseHeaders.X-Frame-Options=SAMEORIGIN"
+      - "traefik.http.middlewares.pma-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.pma-headers.headers.browserXSSFilter=true"
+
+      # HTTPS redirect middleware
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+
+
+
+networks:
+  1clickwp:
+    name: 1clickwp

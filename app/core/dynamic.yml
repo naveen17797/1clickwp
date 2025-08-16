@@ -1,0 +1,18 @@
+            http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+
+  routers:
+    dummy:
+      rule: "Host(`dummy.localhost`)"
+      entryPoints: ["web"]
+      middlewares: ["redirect-to-https"]
+      service: dummy
+
+  services:
+    dummy:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1"

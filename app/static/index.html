@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>1ClickWP - Site Manager</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bunker: {
+              bg: '#0e0e0e',
+              panel: '#1a1a1a',
+              border: '#2e2e2e',
+              text: '#e0ffe0',
+              link: '#5dff8d',
+              red: '#ff5555',
+              hover: '#92ffb5',
+              grayish: '#a1a1a1'
+            }
+          },
+          fontFamily: {
+            mono: ['"Fira Code"', 'Courier New', 'monospace']
+          },
+          transitionProperty: {
+            layout: 'background-color, color, border-color, transform, box-shadow',
+            opacity: 'opacity'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .progress-bar {
+      width: 30%;
+      animation: loadingAnim 1.2s linear infinite;
+    }
+    @keyframes loadingAnim {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(150%); }
+      100% { transform: translateX(-100%); }
+    }
+  </style>
+</head>
+
+<body class="bg-bunker-bg text-bunker-text font-mono min-h-screen flex flex-col">
+
+  <!-- Splash Loading Screen -->
+  <div id="loadingScreen" class="fixed inset-0 bg-bunker-bg flex flex-col items-center justify-center z-50 transition-opacity duration-700">
+    <img src="/static/1clickwp.png" alt="1ClickWP Logo" class="w-24 h-24 mb-4 animate-pulse"/>
+    <p class="text-bunker-link font-bold">Loading 1ClickWP...</p>
+  </div>
+
+  <!-- Global Loading Overlay -->
+  <div id="globalOverlay" class="hidden fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-[100]">
+    <div class="w-64 bg-bunker-panel border border-bunker-border rounded-lg shadow-lg p-6 flex flex-col items-center gap-4">
+      <div class="w-full bg-bunker-bg border border-bunker-border rounded-full h-3 overflow-hidden">
+        <div class="progress-bar h-full bg-bunker-link"></div>
+      </div>
+      <p id="overlayMessage" class="text-sm text-bunker-link font-semibold"></p>
+    </div>
+  </div>
+
+  <!-- App Container -->
+  <div id="appContainer" class="hidden flex-col min-h-screen">
+
+    <!-- Top Navigation Bar -->
+    <nav class="fixed top-0 left-0 w-full z-50 bg-bunker-panel border-b border-bunker-border px-6 py-3 flex items-center justify-between text-sm shadow-md">
+      <div class="flex items-center gap-2 font-bold text-bunker-link">
+        <img src="/static/1clickwp.png" alt="1ClickWP Logo" class="w-6 h-6 object-contain" />
+        1ClickWP
+      </div>
+      <div class="flex items-center gap-5 text-bunker-grayish">
+        <a href="https://naveenmuthusamy.com" target="_blank" class="hover:text-bunker-link transition">Blog</a>
+        <a href="https://github.com/naveen17797/1clickwp" target="_blank" class="hover:text-bunker-link transition">Contribute</a>
+        <a href="https://buymeacoffee.com/naveen17797" target="_blank" class="hover:text-bunker-link transition">☕ Support</a>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 pt-20 pb-16 px-6">
+      <div class="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 bg-bunker-panel p-8 rounded-2xl border border-bunker-border shadow-2xl">
+
+        <!-- Left: Site Creator -->
+        <div class="space-y-6 pr-4 md:pr-8 border-b md:border-b-0 md:border-r border-bunker-border">
+          <h1 class="text-2xl font-bold border-b border-bunker-border pb-2">Create New WordPress Site</h1>
+          <form id="createForm" class="space-y-4">
+            <label class="block text-sm font-semibold">
+              Site Name <span class="text-gray-500">(no spaces)</span>
+              <input type="text" id="siteName" value="my-first-site" autofocus required placeholder="my-wp-site"
+                class="mt-2 w-full bg-bunker-bg text-white border border-bunker-border px-3 py-2 text-sm rounded focus:outline-none focus:ring-2 focus:ring-bunker-link"/>
+            </label>
+
+            <label class="block text-sm font-semibold">
+              WordPress Version
+              <select id="wpImageTag" required
+                class="mt-2 w-full bg-bunker-bg text-white border border-bunker-border px-3 py-2 text-sm rounded focus:outline-none focus:ring-2 focus:ring-bunker-link disabled:opacity-60">
+                <option selected disabled>Loading versions…</option>
+              </select>
+            </label>
+
+            <button type="submit"
+              class="bg-bunker-link text-black font-bold text-sm px-4 py-2 rounded-md hover:bg-bunker-hover transition-layout w-full">
+              Create Site
+            </button>
+          </form>
+
+          <div class="text-xs text-bunker-grayish space-y-2 pt-4 border-t border-bunker-border">
+            <p class="text-bunker-link font-semibold uppercase pt-2">About</p>
+            <ul class="list-disc pl-5">
+              <li>Instant WordPress environments for local or dev use</li>
+              <li>No accounts or telemetry</li>
+              <li>Uses Docker, Traefik, and simple shell scripts</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Right: Active Sites -->
+        <div class="space-y-4 pl-4 md:pl-8">
+          <h2 class="text-xl font-bold border-b border-bunker-border pb-2">Active Sites</h2>
+          <ul id="siteList" class="space-y-3 text-sm"></ul>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <footer class="fixed bottom-0 left-0 w-full bg-bunker-panel border-t border-bunker-border py-3 text-center text-sm text-bunker-grayish">
+      Made with ❤️ from the land of Tamils.
+    </footer>
+
+  </div>
+
+  <!-- JS Logic -->
+  <script>
+    function base64url(input) {
+      const encoded = btoa(unescape(encodeURIComponent(input)));
+      return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function showOverlay(message) {
+      document.getElementById('overlayMessage').textContent = message;
+      document.getElementById('globalOverlay').classList.remove('hidden');
+    }
+
+    function hideOverlay() {
+      document.getElementById('globalOverlay').classList.add('hidden');
+    }
+
+    async function loadSites() {
+      showOverlay("Loading sites…");
+      const res = await fetch('/sites');
+      const sites = await res.json();
+      const list = document.getElementById('siteList');
+      list.innerHTML = '';
+
+      if (!sites.length) {
+        list.innerHTML = `<p class="text-sm text-gray-500 italic">No active sites found.</p>`;
+        hideOverlay();
+        return;
+      }
+
+      for (const site of sites) {
+        const siteId = base64url(site.name);
+        const domain = site.domain;
+        const name = site.name;
+
+        const li = document.createElement('li');
+        li.className = 'bg-bunker-bg border border-bunker-border p-3 rounded-lg hover:border-bunker-link transition-layout';
+
+        li.innerHTML = `
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between items-center">
+              <div>
+                <a href="https://${domain}" target="_blank" class="font-semibold hover:underline text-bunker-link">${name}</a>
+                <p class="text-xs text-gray-500">${domain}</p>
+              </div>
+              <button class="bg-bunker-red text-white px-3 py-1 rounded-md text-xs hover:bg-red-600 transition">Delete</button>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-2 text-xs">
+              <a href="https://${domain}/?auto_login=true" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">Auto-login</a>
+              <a href="https://pma.localhost/index.php?route=/database/structure&db=1clickwp_wordpress_${siteId}" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">phpMyAdmin</a>
+              <a href="https://${domain}/wp-admin" target="_blank" class="px-2 py-1 bg-bunker-panel border border-bunker-border rounded hover:border-bunker-hover text-bunker-link">WP Admin</a>
+            </div>
+          </div>
+        `;
+
+        li.querySelector('button').onclick = () => deleteSite(name);
+        list.appendChild(li);
+      }
+      hideOverlay();
+    }
+
+    async function loadWordPressTags() {
+      const select = document.getElementById('wpImageTag');
+      try {
+        const res = await fetch('/wp-tags');
+        if (!res.ok) throw new Error('Failed to load tags');
+        const tags = await res.json();
+        select.innerHTML = '';
+        for (const tag of tags) {
+          const opt = document.createElement('option');
+          opt.value = tag;
+          opt.textContent = tag;
+          select.appendChild(opt);
+        }
+      } catch (err) {
+        console.error(err);
+        select.innerHTML = '<option disabled selected>Failed to load versions</option>';
+        select.disabled = true;
+      }
+    }
+
+    async function createSite(e) {
+      e.preventDefault();
+      const name = document.getElementById('siteName').value.trim();
+      const tag = document.getElementById('wpImageTag').value;
+      if (!name || !tag) return;
+
+      showOverlay("Creating site…");
+
+      const image = `bitnami/wordpress:${tag}`;
+      const res = await fetch(`/sites?name=${encodeURIComponent(name)}&wordpress_image_name=${encodeURIComponent(image)}`, { method: 'POST' });
+
+      if (res.ok) {
+        showOverlay(`Waiting for "${name}" to become ready…`);
+
+        // Poll via backend to bypass self-signed SSL browser errors
+        const readyRes = await fetch(`/wait-for-site?name=${encodeURIComponent(name)}`);
+        const { ready } = await readyRes.json();
+
+        if (ready) {
+          await loadSites();
+          hideOverlay();
+        } else {
+          hideOverlay();
+          alert(`"${name}" did not become ready in time.`);
+        }
+      } else {
+        const err = await res.json();
+        hideOverlay();
+        alert(`Error: ${err.detail || 'Failed to create site.'}`);
+      }
+    }
+
+    async function deleteSite(name) {
+      if (!confirm(`Delete "${name}"? This action cannot be undone.`)) return;
+
+      showOverlay(`Deleting "${name}"…`);
+
+      const res = await fetch(`/sites/${encodeURIComponent(name)}`, { method: 'DELETE' });
+
+      if (res.ok) {
+        await loadSites();
+        hideOverlay();
+      } else {
+        hideOverlay();
+        alert("Failed to delete site.");
+      }
+    }
+
+    async function initApp() {
+      await loadWordPressTags();
+      await loadSites();
+
+      const splash = document.getElementById('loadingScreen');
+      splash.classList.add('opacity-0');
+      setTimeout(() => {
+        splash.classList.add('hidden');
+        document.getElementById('appContainer').classList.remove('hidden');
+      }, 700);
+    }
+
+    document.getElementById('createForm').addEventListener('submit', createSite);
+
+    initApp();
+  </script>
+</body>
+</html>
