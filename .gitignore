@@ -2,3 +2,4 @@
 __pycache__/
 venv
 sites/
+wp_tags_cache.json

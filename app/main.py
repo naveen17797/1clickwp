@@ -1,8 +1,10 @@
 import base64
+import json
 import os
 import re
+import time
 from pathlib import Path
-
+from fastapi.responses import JSONResponse
 from docker import errors as docker_errors
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -12,7 +14,7 @@ from python_on_whales import docker
 from app.core import Core
 from app.database import Database
 from app.lifespan import lifespan
-
+import requests
 app = FastAPI(lifespan=lifespan)
 core = Core()
 database = Database()
@@ -136,7 +138,7 @@ def list_sites():
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @app.post("/sites")
-def create_site(name: str):
+def create_site(name: str, wordpress_image_name:str):
     def prepare_site_dir(container_name: str) -> str:
         site_path = os.path.join(BASE_DIR, "sites", container_name)
         os.makedirs(site_path, exist_ok=True)
@@ -163,7 +165,7 @@ def create_site(name: str):
         ]
         print(volumes)
         docker.container.run(
-            image="bitnami/wordpress:latest",
+            image=wordpress_image_name,
             name=container_name,
             networks=[DOCKER_NETWORK],
             envs={
@@ -214,3 +216,67 @@ app.mount("/static", StaticFiles(directory=static_path), name="static")
 @app.get("/")
 def serve_index():
     return FileResponse(static_path / "index.html")
+
+
+
+
+# Simple in-memory cache
+_cache = {
+    "data": None,
+    "timestamp": 0
+}
+CACHE_TTL = 3600  # seconds
+
+SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+
+
+CACHE_FILENAME = os.path.join(os.path.dirname(__file__), "wp_tags_cache.json")
+
+def fetch_wp_tags():
+    # If cache exists, load from file
+    if os.path.exists(CACHE_FILENAME):
+        with open(CACHE_FILENAME, "r", encoding="utf-8") as f:
+            try:
+                tags = json.load(f)
+                if isinstance(tags, list) and all(isinstance(t, str) for t in tags):
+                    return tags
+            except json.JSONDecodeError:
+                pass  # If cache is corrupt, fall back to fetch
+
+    # Fetch from Docker Hub
+    url = "https://registry.hub.docker.com/v2/repositories/bitnami/wordpress/tags?page_size=100"
+    tags = []
+
+    while url:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        for t in data.get("results", []):
+            name = t.get("name")
+            if SEMVER_RE.match(name):
+                tags.append(name)
+        url = data.get("next")
+
+    # Sort tags (descending semantic version order)
+    tags.sort(key=lambda v: list(map(int, v.split("."))), reverse=True)
+
+    # Save to cache
+    with open(CACHE_FILENAME, "w", encoding="utf-8") as f:
+        json.dump(tags, f, indent=2)
+
+    return tags
+
+@app.get("/wp-tags")
+async def get_wp_tags():
+    now = time.time()
+    if _cache["data"] and (now - _cache["timestamp"] < CACHE_TTL):
+        return JSONResponse(content=_cache["data"])
+
+    try:
+        tags = fetch_wp_tags()
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+    _cache["data"] = tags
+    _cache["timestamp"] = now
+    return JSONResponse(content=tags)
