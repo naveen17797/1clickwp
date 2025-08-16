@@ -34,6 +34,17 @@
       }
     };
   </script>
+  <style>
+    .progress-bar {
+      width: 30%;
+      animation: loadingAnim 1.2s linear infinite;
+    }
+    @keyframes loadingAnim {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(150%); }
+      100% { transform: translateX(-100%); }
+    }
+  </style>
 </head>
 
 <body class="bg-bunker-bg text-bunker-text font-mono min-h-screen flex flex-col">
@@ -44,7 +55,17 @@
     <p class="text-bunker-link font-bold">Loading 1ClickWP...</p>
   </div>
 
-  <!-- App Container (hidden until loaded) -->
+  <!-- Global Loading Overlay -->
+  <div id="globalOverlay" class="hidden fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-[100]">
+    <div class="w-64 bg-bunker-panel border border-bunker-border rounded-lg shadow-lg p-6 flex flex-col items-center gap-4">
+      <div class="w-full bg-bunker-bg border border-bunker-border rounded-full h-3 overflow-hidden">
+        <div class="progress-bar h-full bg-bunker-link"></div>
+      </div>
+      <p id="overlayMessage" class="text-sm text-bunker-link font-semibold"></p>
+    </div>
+  </div>
+
+  <!-- App Container -->
   <div id="appContainer" class="hidden flex-col min-h-screen">
 
     <!-- Top Navigation Bar -->
@@ -120,7 +141,17 @@
       return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
+    function showOverlay(message) {
+      document.getElementById('overlayMessage').textContent = message;
+      document.getElementById('globalOverlay').classList.remove('hidden');
+    }
+
+    function hideOverlay() {
+      document.getElementById('globalOverlay').classList.add('hidden');
+    }
+
     async function loadSites() {
+      showOverlay("Loading sites…");
       const res = await fetch('/sites');
       const sites = await res.json();
       const list = document.getElementById('siteList');
@@ -128,6 +159,7 @@
 
       if (!sites.length) {
         list.innerHTML = `<p class="text-sm text-gray-500 italic">No active sites found.</p>`;
+        hideOverlay();
         return;
       }
 
@@ -159,6 +191,7 @@
         li.querySelector('button').onclick = () => deleteSite(name);
         list.appendChild(li);
       }
+      hideOverlay();
     }
 
     async function loadWordPressTags() {
@@ -186,23 +219,45 @@
       const name = document.getElementById('siteName').value.trim();
       const tag = document.getElementById('wpImageTag').value;
       if (!name || !tag) return;
+
+      showOverlay("Creating site…");
+
       const image = `bitnami/wordpress:${tag}`;
       const res = await fetch(`/sites?name=${encodeURIComponent(name)}&wordpress_image_name=${encodeURIComponent(image)}`, { method: 'POST' });
+
       if (res.ok) {
-        document.getElementById('siteName').value = '';
-        await loadSites();
+        showOverlay(`Waiting for "${name}" to become ready…`);
+
+        // Poll via backend to bypass self-signed SSL browser errors
+        const readyRes = await fetch(`/wait-for-site?name=${encodeURIComponent(name)}`);
+        const { ready } = await readyRes.json();
+
+        if (ready) {
+          await loadSites();
+          hideOverlay();
+        } else {
+          hideOverlay();
+          alert(`"${name}" did not become ready in time.`);
+        }
       } else {
         const err = await res.json();
+        hideOverlay();
         alert(`Error: ${err.detail || 'Failed to create site.'}`);
       }
     }
 
     async function deleteSite(name) {
       if (!confirm(`Delete "${name}"? This action cannot be undone.`)) return;
+
+      showOverlay(`Deleting "${name}"…`);
+
       const res = await fetch(`/sites/${encodeURIComponent(name)}`, { method: 'DELETE' });
+
       if (res.ok) {
         await loadSites();
+        hideOverlay();
       } else {
+        hideOverlay();
         alert("Failed to delete site.");
       }
     }
@@ -216,7 +271,7 @@
       setTimeout(() => {
         splash.classList.add('hidden');
         document.getElementById('appContainer').classList.remove('hidden');
-      }, 700); // match duration-700
+      }, 700);
     }
 
     document.getElementById('createForm').addEventListener('submit', createSite);

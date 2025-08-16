@@ -2,19 +2,20 @@ import base64
 import json
 import os
 import re
-import time
+import shutil
 from pathlib import Path
-from fastapi.responses import JSONResponse
+import time, requests
 from docker import errors as docker_errors
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from python_on_whales import docker
 
 from app.core import Core
 from app.database import Database
 from app.lifespan import lifespan
-import requests
+
 app = FastAPI(lifespan=lifespan)
 core = Core()
 database = Database()
@@ -196,9 +197,12 @@ def create_site(name: str, wordpress_image_name:str):
 def delete_site(name: str):
     site_id = generate_site_id(sanitize_name(name))
     container_name = get_container_name(site_id)
+    site_path = os.path.join(BASE_DIR, "sites", name)
     database.delete(container_name)
     try:
         docker.container.remove(container_name, force=True)
+        print(site_path)
+        shutil.rmtree(site_path, ignore_errors=True)
         return {"message": f"Site '{name}' deleted"}
     except docker_errors.NotFound:
         raise HTTPException(status_code=404, detail="Site not found")
@@ -268,15 +272,29 @@ def fetch_wp_tags():
 
 @app.get("/wp-tags")
 async def get_wp_tags():
-    now = time.time()
-    if _cache["data"] and (now - _cache["timestamp"] < CACHE_TTL):
-        return JSONResponse(content=_cache["data"])
-
     try:
         tags = fetch_wp_tags()
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
-
-    _cache["data"] = tags
-    _cache["timestamp"] = now
     return JSONResponse(content=tags)
+
+
+
+
+
+
+@app.get("/wait-for-site")
+def wait_for_site(name: str, timeout: int = 90, interval: int = 3):
+    domain = f"{name}.localhost"  # change to your domain pattern
+    url = f"https://{domain}"
+
+    end_time = time.time() + timeout
+    while time.time() < end_time:
+        try:
+            r = requests.head(url, verify=False, timeout=2)
+            if r.status_code < 500:  # consider <500 as "ready"
+                return {"ready": True}
+        except Exception:
+            pass
+        time.sleep(interval)
+    return {"ready": False}
