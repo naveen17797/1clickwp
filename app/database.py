@@ -13,7 +13,7 @@ class Database:
                     '-uroot',
                     '-plocal',
                     '-e',
-                    f"DROP DATABASE `{db_name}`;"
+                    f"DROP DATABASE IF EXISTS `{db_name}`;"
                 ]
             )
         except Exception as e:
