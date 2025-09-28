@@ -25,6 +25,14 @@ Version: 1.0.6
 - Pip package manager
 - Docker ( essential for 1clickwp to work )
 
+** Run all the below commands from repo root **
+
+### Create virtual env
+```python3 -m venv venv```
+
+### Activate virtual env
+```source venv/bin/activate```
+
 ### Install Dependencies
 ```pip install -r requirements.txt```
 
